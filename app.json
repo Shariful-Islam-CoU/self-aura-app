@@ -4,7 +4,7 @@
     "slug": "self-aura-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo2.png",
     "scheme": "selfaura",
     "userInterfaceStyle": "automatic",
     "primaryColor": "#2563EB",
@@ -20,13 +20,13 @@
       "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/logo2.png",
+        "backgroundImage": "./assets/logo2.png",
+        "monochromeImage": "./assets/logo2.png"
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/logo2.png"
     },
     "plugins": [
       "expo-router",
@@ -34,10 +34,9 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-icon.png",
+          "image": "./assets/logo2.png",
           "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#0B0D0F"
+          "resizeMode": "contain"
         }
       ],
       "expo-font",

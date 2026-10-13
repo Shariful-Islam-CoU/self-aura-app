@@ -11,6 +11,7 @@ import type {
 export interface DashboardQuery {
   startDate?: string;
   endDate?: string;
+  groupBy?: 'day' | 'week' | 'month';
 }
 
 interface OrderListData {
@@ -37,41 +38,44 @@ interface LowStockApiItem {
 export class DashboardService {
   private readonly basePath = '/reports';
 
-  static buildDateRange(preset: DateRangePreset): { startDate?: string; endDate?: string } {
+  static buildDateRange(preset: DateRangePreset): { startDate?: string; endDate?: string; groupBy?: 'day' | 'week' | 'month' } {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const format = (d: Date) => d.toISOString().split('T')[0];
 
     switch (preset) {
       case 'today':
-        return { startDate: format(today), endDate: format(today) };
+        // Default to last 7 days for better trend visualization
+        const s = new Date(today);
+        s.setDate(s.getDate() - 6);
+        return { startDate: format(s), endDate: format(today), groupBy: 'day' };
       case 'yesterday': {
         const y = new Date(today);
         y.setDate(y.getDate() - 1);
-        return { startDate: format(y), endDate: format(y) };
+        return { startDate: format(y), endDate: format(y), groupBy: 'day' };
       }
       case 'last7days': {
         const s = new Date(today);
         s.setDate(s.getDate() - 6);
-        return { startDate: format(s), endDate: format(today) };
+        return { startDate: format(s), endDate: format(today), groupBy: 'day' };
       }
       case 'last30days': {
         const s = new Date(today);
         s.setDate(s.getDate() - 29);
-        return { startDate: format(s), endDate: format(today) };
+        return { startDate: format(s), endDate: format(today), groupBy: 'day' };
       }
       case 'thisMonth': {
         const s = new Date(today.getFullYear(), today.getMonth(), 1);
-        return { startDate: format(s), endDate: format(today) };
+        return { startDate: format(s), endDate: format(today), groupBy: 'day' };
       }
       case 'previousMonth': {
         const s = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         const e = new Date(today.getFullYear(), today.getMonth(), 0);
-        return { startDate: format(s), endDate: format(e) };
+        return { startDate: format(s), endDate: format(e), groupBy: 'day' };
       }
       case 'custom':
       default:
-        return {};
+        return { groupBy: 'day' };
     }
   }
 

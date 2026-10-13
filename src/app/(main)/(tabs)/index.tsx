@@ -56,7 +56,7 @@ export default function HomeScreen() {
   const range = useMemo(() => DashboardService.buildDateRange(preset), [preset]);
 
   const summary = useDashboardSummary(range);
-  const trend = useSalesTrend(range, 'day', canViewDashboard && canViewSales);
+  const trend = useSalesTrend(range, range.groupBy || 'day', canViewDashboard && canViewSales);
   const recentOrders = useRecentOrders(5, canViewDashboard && canViewOrders);
   const lowStock = useLowStockProducts(canViewDashboard && canViewInventory);
 
