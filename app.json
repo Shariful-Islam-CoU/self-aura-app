@@ -31,9 +31,7 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-svg",
       "expo-image-picker",
-      "expo-linear-gradient",
       [
         "expo-splash-screen",
         {
