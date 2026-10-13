@@ -31,6 +31,10 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "expo-svg",
+      "expo-image",
+      "expo-image-picker",
+      "expo-linear-gradient",
       [
         "expo-splash-screen",
         {
@@ -44,6 +48,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "28c1f053-a12f-4f68-b02a-34124c7692bf"
+      }
     }
   }
 }
