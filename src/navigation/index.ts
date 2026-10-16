@@ -17,7 +17,7 @@ export {
   reportsModule,
   couriersModule,
   shipmentsModule,
-  deliveryZonesModule,
+  deliveryRulesModule,
   reviewsModule,
   couponsModule,
   usersModule,

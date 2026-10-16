@@ -12,6 +12,7 @@ import {
   ProductInventorySection,
   ProductOverviewSection,
   ProductPricingSection,
+  ProductVideosSection,
   SectionCard,
 } from '@/features/products/components';
 import { useDeactivateProduct, useProductDetails } from '@/features/products/queries';
@@ -175,6 +176,7 @@ export default function ProductDetailsScreen() {
           onOpenInventory={() => router.push('/inventory')}
         />
         <ProductImagesSection product={product} />
+        <ProductVideosSection product={product} />
         {showActions ? (
           <SectionCard title="Actions">
             {canEdit ? (

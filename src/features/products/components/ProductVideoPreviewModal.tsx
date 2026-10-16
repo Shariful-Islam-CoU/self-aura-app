@@ -1,11 +1,13 @@
-import { Modal, StyleSheet, View } from 'react-native';
+import { Alert, ActivityIndicator, Modal, StyleSheet, View } from 'react-native';
 import { useEvent } from 'expo';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useState } from 'react';
 
 import { IconButton, Text } from '@/components/ui';
 import { spacing } from '@/theme';
 import { formatDuration, resolveMediaUrl } from '../lib/media';
+import { saveRemoteMediaToLibrary } from '../lib/saveMedia';
 import type { ProductVideo } from '../types';
 
 export interface ProductVideoPreviewModalProps {
@@ -15,8 +17,8 @@ export interface ProductVideoPreviewModalProps {
 }
 
 /**
- * Full-screen video preview (tap the poster in the video manager to open).
- *
+ * Full-screen video preview with download capability.
+ * 
  * Playback runs through `expo-video` (bundled in Expo Go for SDK 57) and
  * STREAMS the backend's transcoded MP4 delivery URL directly - nothing is
  * downloaded up front, and no Cloudinary credential is involved: the app
@@ -25,16 +27,14 @@ export interface ProductVideoPreviewModalProps {
  * built here. The player lives exactly as long as the modal does - unmount
  * stops playback and releases it.
  *
- * Deliberately no tap-to-dismiss on the video surface: the controls need
- * those taps. Close is the button (and Android's back gesture via
- * `onRequestClose`).
+ * Tap the download button to save video to device's photo library.
  */
 export function ProductVideoPreviewModal({ video, onClose }: ProductVideoPreviewModalProps) {
   const insets = useSafeAreaInsets();
-  const source = resolveMediaUrl(video.url);
+  const videoSource = resolveMediaUrl(video.url) ?? '';
+  const [saving, setSaving] = useState(false);
 
-  const player = useVideoPlayer(source, (instance) => {
-    // The user tapped this video specifically, so preview means play.
+  const player = useVideoPlayer(videoSource, (instance) => {
     instance.play();
   });
 
@@ -42,6 +42,30 @@ export function ProductVideoPreviewModal({ video, onClose }: ProductVideoPreview
   const failed = status === 'error';
 
   const caption = [video.alt?.trim(), formatDuration(video.duration)].filter(Boolean).join(' · ');
+
+  const saveVideo = async () => {
+    if (!videoSource) return;
+
+    setSaving(true);
+    const result = await saveRemoteMediaToLibrary(videoSource, 'video');
+    setSaving(false);
+
+    if (result.ok) {
+      Alert.alert('Saved', 'Video saved to your photo library.');
+    } else if (result.reason === 'permission') {
+      Alert.alert(
+        'Permission required',
+        'Allow video access in your device settings to save videos.',
+      );
+    } else if (result.reason === 'unavailable') {
+      Alert.alert(
+        'Update required',
+        'Saving to the gallery needs a rebuilt app. Update Self Aura and try again.',
+      );
+    } else {
+      Alert.alert('Could not save', 'The video could not be downloaded. Please try again.');
+    }
+  };
 
   return (
     <Modal
@@ -59,6 +83,20 @@ export function ProductVideoPreviewModal({ video, onClose }: ProductVideoPreview
             onPress={onClose}
             filled
           />
+          {!saving && (
+            <IconButton
+              icon="download-outline"
+              accessibilityLabel="Download video"
+              onPress={saveVideo}
+              filled
+              style={styles.downloadButton}
+            />
+          )}
+          {saving && (
+            <View style={styles.downloadButton}>
+              <ActivityIndicator color="#fff" size="small" />
+            </View>
+          )}
         </View>
 
         <View style={styles.stage}>
@@ -105,6 +143,12 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     right: spacing.lg,
+    zIndex: 1,
+  },
+  downloadButton: {
+    position: 'absolute',
+    right: spacing.lg,
+    top: spacing.lg + 50,
     zIndex: 1,
   },
   stage: {

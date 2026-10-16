@@ -15,7 +15,7 @@ export default function ReturnDetailsScreen() {
   const approve = useApproveReturn(id);
   const reject = useRejectReturn(id);
   const receive = useReceiveReturn(id);
-  const [rejectNote, setRejectNote] = useState('');
+  const [rejectNote] = useState('');
 
   if (!id) return <Screen scroll={true}><ErrorState title="Missing ID" description="Invalid route." /></Screen>;
   if (isLoading) return <LoadingState />;

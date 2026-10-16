@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
+  Image,
   StyleSheet,
   View,
   Animated,
@@ -7,35 +8,31 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Button, Card, Input, Text, Checkbox } from '@/components/ui';
+import { Button, Card, Input, Text } from '@/components/ui';
 import { Screen } from '@/components/layout/Screen';
 import { useAuth, useTheme } from '@/providers';
 import { apiClient, getErrorMessage, isApiError, type ApiEnvelope } from '@/api';
-import { spacing, radius } from '@/theme';
+import { spacing, radius, fontFamilies } from '@/theme';
+import { useLogo } from '@/hooks/useLogo';
 import type { AuthSession } from '@/features/auth';
 
 /**
  * Login screen - authenticates against the existing self_aura_backend
  * (POST /auth/login). No shell preview; real session via setSession.
  *
- * Redesigned with premium dark navy/blue visual system:
- * - Self Aura branding header
- * - Welcome message
- * - Glass-like form container
- * - Modern input fields with icons
- * - Remember me / Forgot password
- * - Primary gradient Sign In button
- * - Polished error/loading states
- * - Brand footer
- * - Subtle background decoration
+ * Layout: Self Aura brand logo + wordmark, welcome message, and a form
+ * card. Every surface/text color comes from the theme tokens, so the screen
+ * reads correctly in both light and dark mode; decorative glows use the
+ * primary color at low opacity. The mark follows the theme via `useLogo`
+ * (logo_light.png / logo_dark.png).
  */
 export default function LoginScreen() {
   const { setSession } = useAuth();
   const { theme } = useTheme();
+  const logo = useLogo();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -106,14 +103,7 @@ export default function LoginScreen() {
   const passwordError = fieldErrors.password?.[0];
 
   return (
-    <Screen
-      safeTop
-      keyboardAvoiding
-      scroll
-      style={styles.screen}
-    >
-      <View style={styles.backgroundDecoration} />
-
+    <Screen safeTop keyboardAvoiding scroll>
       <Animated.View
         style={[
           styles.contentContainer,
@@ -123,161 +113,135 @@ export default function LoginScreen() {
           },
         ]}
       >
-          {/* Background decorative shapes */}
-          <View style={styles.topGlow} />
-          <View style={styles.bottomWave} />
+        {/* Background decorative shapes */}
+        <View style={[styles.topGlow, { backgroundColor: theme.colors.primary }]} />
+        <View style={[styles.bottomWave, { backgroundColor: theme.colors.primary }]} />
 
-          {/* 1. BRANDING HEADER */}
-          <View style={styles.brandHeader}>
-            <View style={[styles.logoContainer, { backgroundColor: theme.colors.primary }]}>
-              <Ionicons name="sparkles" size={32} color={theme.colors.onPrimary} />
-            </View>
-            <Text variant="display" tone="default" style={styles.brandTitle}>
-              Self Aura
+        {/* 1. BRANDING HEADER */}
+        <View style={styles.brandHeader}>
+          <Image
+            source={logo}
+            style={styles.logo}
+            resizeMode="contain"
+            accessibilityRole="image"
+            accessibilityLabel="Self Aura logo"
+          />
+          <Text numberOfLines={1} style={styles.brandTitle}>
+            Self Aura
+          </Text>
+          <Text variant="body" tone="muted" style={styles.brandSubtitle}>
+            Management App
+          </Text>
+        </View>
+
+        {/* 2. WELCOME SECTION */}
+        <View style={styles.welcomeSection}>
+          <Text variant="display" tone="default" style={styles.welcomeTitle}>
+            Welcome Back{' '}
+            <Text tone="primary" style={styles.welcomeAccent}>
+              👋
             </Text>
-            <Text variant="body" tone="muted" style={styles.brandSubtitle}>
-              Management App
-            </Text>
-          </View>
+          </Text>
+          <Text variant="body" tone="secondary" style={styles.welcomeDescription}>
+            Sign in to your management account to continue.
+          </Text>
+        </View>
 
-          {/* 2. WELCOME SECTION */}
-          <View style={styles.welcomeSection}>
-            <Text variant="display" tone="default" style={styles.welcomeTitle}>
-              Welcome Back{' '}
-              <Text tone="primary" style={styles.welcomeAccent}>
-                👋
-              </Text>
-            </Text>
-            <Text variant="body" tone="secondary" style={styles.welcomeDescription}>
-              Sign in to your management account to continue.
-            </Text>
-          </View>
-
-          {/* 3. LOGIN FORM CONTAINER */}
-          <Card style={styles.formCard} padded={false}>
-            <View style={styles.formContent}>
-              {/* Error Banner */}
-              {formError ? (
-                <View
-                  style={[
-                    styles.errorContainer,
-                    {
-                      backgroundColor: theme.colors.dangerSoft,
-                      borderColor: theme.colors.danger,
-                    },
-                  ]}
-                  accessibilityRole="alert"
-                  accessibilityLiveRegion="polite"
-                >
-                  <View style={styles.errorRow}>
-                    <Ionicons
-                      name="alert-circle-outline"
-                      size={theme.iconSizes.md}
-                      color={theme.colors.danger}
-                      style={styles.errorIcon}
-                    />
-                    <Text variant="bodySmall" tone="danger" style={styles.errorText}>
-                      {formError}
-                    </Text>
-                  </View>
-                </View>
-              ) : null}
-
-              {/* Username Input */}
-              <Input
-                label="Username"
-                value={username}
-                onChangeText={(t) => {
-                  setUsername(t);
-                  if (fieldErrors.username) {
-                    setFieldErrors((prev) => ({ ...prev, username: [] }));
-                  }
-                }}
-                error={usernameError}
-                autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="username"
-                returnKeyType="next"
-                leadingIcon="person-outline"
-                placeholder="Enter your username"
-              />
-
-              {/* Password Input */}
-              <Input
-                label="Password"
-                value={password}
-                onChangeText={(t) => {
-                  setPassword(t);
-                  if (fieldErrors.password) {
-                    setFieldErrors((prev) => ({ ...prev, password: [] }));
-                  }
-                }}
-                error={passwordError}
-                textContentType="password"
-                returnKeyType="done"
-                onSubmitEditing={handleSubmit}
-                leadingIcon="lock-closed-outline"
-                placeholder="Enter your password"
-                secure={true}
-              />
-
-              {/* Remember Me + Forgot Password */}
-              <View style={styles.rememberForgotRow}>
-                <View style={styles.rememberMeContainer}>
-                  <Checkbox
-                    label="Remember me"
-                    checked={rememberMe}
-                    onCheckedChange={setRememberMe}
+        {/* 3. LOGIN FORM CONTAINER */}
+        <Card style={[styles.formCard, theme.shadows.lg]} padded={false}>
+          <View style={styles.formContent}>
+            {/* Error Banner */}
+            {formError ? (
+              <View
+                style={[
+                  styles.errorContainer,
+                  {
+                    backgroundColor: theme.colors.dangerSoft,
+                    borderColor: theme.colors.danger,
+                  },
+                ]}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
+                <View style={styles.errorRow}>
+                  <Ionicons
+                    name="alert-circle-outline"
+                    size={theme.iconSizes.md}
+                    color={theme.colors.danger}
+                    style={styles.errorIcon}
                   />
-                </View>
-                <View style={styles.forgotPasswordContainer}>
-                  <Button
-                    title="Forgot password?"
-                    variant="ghost"
-                    size="sm"
-                    onPress={() => {
-                      // Forgot password functionality - if backend supports it,
-                      // this would navigate to a password reset flow.
-                      // Currently keeping existing behavior (no-op if not implemented).
-                    }}
-                    accessibilityLabel="Forgot password"
-                  />
+                  <Text variant="bodySmall" tone="danger" style={styles.errorText}>
+                    {formError}
+                  </Text>
                 </View>
               </View>
+            ) : null}
 
-              {/* Sign In Button */}
-              <Button
-                title={isSubmitting ? 'Signing in...' : 'Sign In'}
-                onPress={handleSubmit}
-                loading={isSubmitting}
-                disabled={isSubmitting || !username.trim() || !password}
-                variant="primary"
-                size="lg"
-                fullWidth
-                icon="log-in-outline"
-                style={styles.signInButton}
-              />
-            </View>
-          </Card>
+            {/* Username Input */}
+            <Input
+              label="Username"
+              value={username}
+              onChangeText={(t) => {
+                setUsername(t);
+                if (fieldErrors.username) {
+                  setFieldErrors((prev) => ({ ...prev, username: [] }));
+                }
+              }}
+              error={usernameError}
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="username"
+              returnKeyType="next"
+              leadingIcon="person-outline"
+              placeholder="Enter your username"
+            />
 
-          {/* 4. BRAND FOOTER */}
-          <View style={styles.footer}>
-            <Text variant="caption" tone="muted" style={styles.footerText}>
-              BETTER MANAGEMENT  •  BRIGHTER FUTURE
-            </Text>
+            {/* Password Input */}
+            <Input
+              label="Password"
+              value={password}
+              onChangeText={(t) => {
+                setPassword(t);
+                if (fieldErrors.password) {
+                  setFieldErrors((prev) => ({ ...prev, password: [] }));
+                }
+              }}
+              error={passwordError}
+              textContentType="password"
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
+              leadingIcon="lock-closed-outline"
+              placeholder="Enter your password"
+              secure={true}
+            />
+
+            {/* Sign In Button */}
+            <Button
+              title={isSubmitting ? 'Signing in...' : 'Sign In'}
+              onPress={handleSubmit}
+              loading={isSubmitting}
+              disabled={isSubmitting || !username.trim() || !password}
+              variant="primary"
+              size="lg"
+              fullWidth
+              icon="log-in-outline"
+              style={styles.signInButton}
+            />
           </View>
-        </Animated.View>
+        </Card>
+
+        {/* 4. BRAND FOOTER */}
+        <View style={styles.footer}>
+          <Text variant="caption" tone="muted" style={styles.footerText}>
+            BETTER MANAGEMENT  •  BRIGHTER FUTURE
+          </Text>
+        </View>
+      </Animated.View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: '#06122B',
-  },
-  backgroundDecoration: {
-    ...StyleSheet.absoluteFill,
-  },
   contentContainer: {
     flex: 1,
     paddingHorizontal: spacing.lg,
@@ -294,7 +258,6 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: '#3B82F6',
     opacity: 0.08,
     zIndex: 0,
   },
@@ -305,7 +268,6 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 140,
-    backgroundColor: '#4F46E5',
     opacity: 0.06,
     zIndex: 0,
   },
@@ -317,21 +279,15 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     zIndex: 1,
   },
-  logoContainer: {
+  logo: {
     width: 72,
     height: 72,
-    borderRadius: radius.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 8,
+    borderRadius: radius.lg,
   },
   brandTitle: {
-    fontWeight: '800',
-    letterSpacing: -0.6,
+    fontSize: 24,
+    lineHeight: 28,
+    fontFamily: fontFamilies.display,
     textAlign: 'center',
   },
   brandSubtitle: {
@@ -361,55 +317,26 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // Form Card
+  // Form Card (surface/border/shadow come from the themed `Card`)
   formCard: {
     zIndex: 1,
     marginTop: spacing.md,
-    backgroundColor: 'rgba(11, 29, 61, 0.85)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(59, 130, 246, 0.25)',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 32,
-    elevation: 12,
   },
   formContent: {
     padding: spacing.xl,
     gap: spacing.lg,
   },
 
-  // Inputs
-  input: {
-    marginBottom: spacing.xs,
-  },
-
-  // Remember Me + Forgot Password
-  rememberForgotRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.xs,
-  },
-  rememberMeContainer: {
-    flex: 1,
-  },
-  forgotPasswordContainer: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
-
   // Sign In Button
   signInButton: {
     marginTop: spacing.md,
-    backgroundColor: 'transparent', // Overridden by gradient in Button
   },
 
   // Error Container
   errorContainer: {
     padding: spacing.md,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     marginBottom: spacing.sm,
   },
   errorRow: {

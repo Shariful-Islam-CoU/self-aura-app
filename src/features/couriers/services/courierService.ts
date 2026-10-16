@@ -1,4 +1,4 @@
-﻿import { apiClient, type ApiEnvelope } from '@/api';
+import { apiClient, type ApiEnvelope } from '@/api';
 
 import type {
   Courier,

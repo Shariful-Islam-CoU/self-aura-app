@@ -63,6 +63,7 @@ export type PermissionKey =
   | 'orders.create'
   | 'orders.edit'
   | 'orders.cancel'
+  | 'orders.overrideDeliveryCharge'
   // Purchases
   | 'purchases.view'
   | 'purchases.create'
@@ -142,12 +143,11 @@ export type PermissionKey =
   | 'coupons.create'
   | 'coupons.edit'
   | 'coupons.delete'
-  // Delivery zones
-  | 'deliveryZones.view'
-  | 'deliveryZones.create'
-  | 'deliveryZones.edit'
-  | 'deliveryZones.delete'
-  | 'deliveryZones.manage'
+  // Delivery rules
+  | 'deliveryRules.view'
+  | 'deliveryRules.create'
+  | 'deliveryRules.edit'
+  | 'deliveryRules.delete'
   // Server may issue keys unknown to this build (never guess, but don't break).
   | (string & {});
 

@@ -33,6 +33,14 @@
       "expo-secure-store",
       "expo-image-picker",
       [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Self Aura to access your photos.",
+          "savePhotosPermission": "Allow Self Aura to save photos and videos to your library.",
+          "granularPermissions": ["photo", "video"]
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/logo2.png",

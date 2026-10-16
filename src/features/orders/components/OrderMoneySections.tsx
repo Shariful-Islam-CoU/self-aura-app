@@ -46,7 +46,8 @@ export function OrderItemsSection({ order }: { order: Order }) {
 
 /**
  * Backend-calculated pricing breakdown - every figure is read from the
- * order; nothing is recalculated on the client.
+ * order; nothing is recalculated on the client. `order.deliveryCharge` is
+ * the billed (possibly overridden) fee, so `total` always reconciles with it.
  */
 export function OrderPricingSection({ order }: { order: Order }) {
   return (

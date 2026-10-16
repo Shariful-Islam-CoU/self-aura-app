@@ -13,7 +13,7 @@ export function CustomerOverviewSection({ customer }: { customer: Customer }) {
   return (
     <SectionCard title="Overview">
       <View style={styles.identity}>
-        <Avatar name={customer.name} size="md" />
+        <Avatar name={customer.name} source={customer.avatarUrl} size="md" />
         <View style={styles.identityText}>
           <Text variant="subtitle" numberOfLines={2}>
             {customer.name}

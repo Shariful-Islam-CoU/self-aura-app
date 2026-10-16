@@ -17,6 +17,9 @@ import type {
  *   POST   /customers           - create (customers.create)
  *   PATCH  /customers/:id       - update, null clears a field (customers.edit)
  *   DELETE /customers/:id       - soft deactivate, isActive=false (customers.delete)
+ *   PATCH  /customers/:id/avatar - update avatar URL (customers.edit)
+ *   POST   /customers/:id/avatar - upload avatar file (customers.edit)
+ *   DELETE /customers/:id/avatar - delete avatar (customers.edit)
  *   GET    /reports/customers   - backend-computed business totals (reports.customers)
  *
  * This service performs no business math: statistics and validation are
@@ -55,6 +58,32 @@ class CustomerService {
     const res = await apiClient.patch<ApiEnvelope<{ customer: Customer }>>(
       `${this.basePath}/${id}`,
       input,
+    );
+    return res.data.customer;
+  }
+
+  /** Update customer avatar URL (JSON endpoint). */
+  async updateAvatarUrl(id: string, avatarUrl: string | null): Promise<Customer> {
+    const res = await apiClient.patch<ApiEnvelope<{ customer: Customer }>>(
+      `${this.basePath}/${id}/avatar`,
+      { avatarUrl },
+    );
+    return res.data.customer;
+  }
+
+  /** Upload customer avatar file (multipart endpoint). */
+  async uploadAvatar(id: string, formData: FormData): Promise<Customer> {
+    const res = await apiClient.upload<ApiEnvelope<{ customer: Customer }>>(
+      `${this.basePath}/${id}/avatar`,
+      formData,
+    );
+    return res.data.customer;
+  }
+
+  /** Delete customer avatar. */
+  async deleteAvatar(id: string): Promise<Customer> {
+    const res = await apiClient.delete<ApiEnvelope<{ customer: Customer }>>(
+      `${this.basePath}/${id}/avatar`,
     );
     return res.data.customer;
   }

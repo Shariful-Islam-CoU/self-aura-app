@@ -1,6 +1,6 @@
 import { Linking, StyleSheet, View } from 'react-native';
 
-import { Badge, IconButton, Text } from '@/components/ui';
+import { Badge, Button, IconButton, Text } from '@/components/ui';
 import { spacing } from '@/theme';
 import { formatCurrency, formatDateTime } from '@/utils/format';
 import {
@@ -120,8 +120,22 @@ export function OrderCustomerSection({
 /**
  * Shipping address + the immutable delivery-zone snapshot stored when the
  * order was placed (later zone edits never alter this order).
+ *
+ * When the billed fee was manually overridden the calculated (rule-based)
+ * charge stays on the order for reference and the final billed charge plus
+ * the override trail are shown. `canOverrideCharge` (mapped from
+ * `orders.overrideDeliveryCharge`) reveals the management-only editor; the
+ * backend re-checks the permission and recomputes the total.
  */
-export function OrderDeliverySection({ order }: { order: Order }) {
+export function OrderDeliverySection({
+  order,
+  canOverrideCharge = false,
+  onRequestOverride,
+}: {
+  order: Order;
+  canOverrideCharge?: boolean;
+  onRequestOverride?: () => void;
+}) {
   const address = order.shippingAddress;
   const areaLine = [address.area, address.district, address.city].filter(Boolean).join(', ');
   const postalLine = [address.postalCode, address.country].filter(Boolean).join(', ');
@@ -148,10 +162,35 @@ export function OrderDeliverySection({ order }: { order: Order }) {
       {delivery ? (
         <>
           <DetailRow label="Zone" value={`${delivery.name} (${delivery.code})`} />
-          <DetailRow
-            label="Delivery charge"
-            value={delivery.freeDeliveryApplied ? 'Free' : formatCurrency(delivery.charge)}
-          />
+          {delivery.isOverridden ? (
+            <>
+              <DetailRow
+                label="Calculated charge"
+                value={formatCurrency(delivery.calculatedCharge ?? delivery.charge)}
+              />
+              <DetailRow
+                label="Final charge"
+                value={formatCurrency(delivery.finalCharge ?? delivery.charge)}
+                emphasis
+              />
+              {delivery.overrideReason ? (
+                <DetailRow label="Override reason" value={delivery.overrideReason} />
+              ) : null}
+              {delivery.overriddenBy ? (
+                <DetailRow
+                  label="Overridden by"
+                  value={`${delivery.overriddenBy}${
+                    delivery.overriddenAt ? ` · ${formatDateTime(delivery.overriddenAt)}` : ''
+                  }`}
+                />
+              ) : null}
+            </>
+          ) : (
+            <DetailRow
+              label="Delivery charge"
+              value={delivery.freeDeliveryApplied ? 'Free' : formatCurrency(delivery.charge)}
+            />
+          )}
           <DetailRow
             label="Estimated delivery"
             value={`${delivery.estimatedMinDays}-${delivery.estimatedMaxDays} days`}
@@ -159,6 +198,23 @@ export function OrderDeliverySection({ order }: { order: Order }) {
           <Text variant="caption" tone="muted">
             Stored with the order when it was placed. Later zone changes never alter this order.
           </Text>
+
+          {canOverrideCharge ? (
+            <View style={styles.overrideAction}>
+              <Button
+                title={delivery.isOverridden ? 'Change final charge' : 'Override charge'}
+                variant="outline"
+                size="sm"
+                icon="pencil-outline"
+                onPress={onRequestOverride}
+                accessibilityLabel={
+                  delivery.isOverridden
+                    ? `Change the final delivery charge for order ${order.orderNumber}`
+                    : `Override the delivery charge for order ${order.orderNumber}`
+                }
+              />
+            </View>
+          ) : null}
         </>
       ) : null}
     </SectionCard>
@@ -186,4 +242,5 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     justifyContent: 'flex-end',
   },
+  overrideAction: { alignItems: 'flex-start' },
 });

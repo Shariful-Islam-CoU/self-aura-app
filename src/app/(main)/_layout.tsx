@@ -35,6 +35,7 @@ export default function MainLayout() {
       <Stack.Screen name="payments" options={{ headerShown: false }} />
       <Stack.Screen name="couriers" options={{ headerShown: false }} />
       <Stack.Screen name="shipments" options={{ headerShown: false }} />
+      <Stack.Screen name="delivery-rules" options={{ headerShown: false }} />
       <Stack.Screen name="coupons" options={{ headerShown: false }} />
       <Stack.Screen name="returns" options={{ headerShown: false }} />
       <Stack.Screen name="reviews" options={{ headerShown: false }} />

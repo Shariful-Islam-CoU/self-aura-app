@@ -10,6 +10,7 @@ export {
   type ProductInventorySectionProps,
 } from './ProductDetailSections';
 export { ProductImagesSection } from './ProductImagesSection';
+export { ProductVideosSection } from './ProductVideosSection';
 export { ProductMediaSection } from './ProductMediaSection';
 export { ProductImageManager } from './ProductImageManager';
 export { ProductVideoManager } from './ProductVideoManager';

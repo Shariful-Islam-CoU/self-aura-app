@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
@@ -23,6 +24,7 @@ import { radius, spacing } from '@/theme';
 export default function TabsLayout() {
   const { canAccess } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -35,7 +37,8 @@ export default function TabsLayout() {
           borderTopColor: theme.colors.border,
           borderTopWidth: StyleSheet.hairlineWidth,
           paddingVertical: spacing.xs,
-          height: 64,
+          height: 64 + insets.bottom,
+          paddingBottom: spacing.xs + insets.bottom,
         },
         tabBarLabelStyle: styles.label,
         tabBarItemStyle: styles.tabItem,

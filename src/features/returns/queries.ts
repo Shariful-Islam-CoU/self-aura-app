@@ -1,6 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { dashboardKeys } from '@/features/dashboard/queries';
 import { returnService } from './services/returnService';
 import type { Return, ReturnListParams, UpdateReturnData, RejectReturnData } from './types';
 

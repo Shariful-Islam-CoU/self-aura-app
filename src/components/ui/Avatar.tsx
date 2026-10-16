@@ -10,7 +10,7 @@ export interface AvatarProps {
   /** Display name - initials are derived from it when there is no image. */
   name?: string;
   /** Remote image URL (people/products); omitted -> initials/icon fallback. */
-  source?: string;
+  source?: string | null;
   size?: keyof typeof sizes;
   /** Optional status dot (e.g. `success` for active users). */
   status?: StatusTone;

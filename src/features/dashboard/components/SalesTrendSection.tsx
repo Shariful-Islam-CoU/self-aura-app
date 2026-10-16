@@ -151,6 +151,7 @@ export function SalesTrendSection({
               bezier
               style={styles.chart}
               verticalLabelRotation={30}
+              withHorizontalLabels={false}
             />
           </ScrollView>
         </View>
@@ -168,10 +169,14 @@ const styles = StyleSheet.create({
     // Allow horizontal scrolling
   },
   scrollContent: {
-    paddingLeft: spacing.lg, // Add left padding for first label
+    paddingLeft: spacing.xs, // Card already pads - avoid doubling the left inset
     paddingRight: spacing.lg, // Add right padding for last label
   },
   chart: {
     borderRadius: radius.md,
+    // chart-kit's legacy geometry treats `paddingRight` as the LEFT inset of
+    // the plot area (default 64px). Keep it small so the line hugs the left
+    // edge instead of leaving a wide empty gutter.
+    paddingRight: 8,
   },
 });

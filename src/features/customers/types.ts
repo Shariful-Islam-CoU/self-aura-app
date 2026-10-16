@@ -36,6 +36,7 @@ export interface Customer {
   isActive: boolean;
   facebookName?: string | null;
   facebookProfileUrl?: string | null;
+  avatarUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -100,6 +101,7 @@ export interface CreateCustomerInput {
   tags?: string[];
   facebookName?: string | null;
   facebookProfileUrl?: string | null;
+  avatarUrl?: string | null;
 }
 
 /**
@@ -116,6 +118,7 @@ export interface UpdateCustomerInput {
   tags?: string[];
   facebookName?: string | null;
   facebookProfileUrl?: string | null;
+  avatarUrl?: string | null;
 }
 
 /**

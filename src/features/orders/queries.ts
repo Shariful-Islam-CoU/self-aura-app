@@ -104,3 +104,10 @@ export function useCancelOrder() {
     (order) => ordersKeys.detail(order.id),
   );
 }
+
+export function useOverrideOrderDeliveryCharge() {
+  return useOrderMutation<{ id: string; finalCharge: number; reason?: string }>(
+    ({ id, finalCharge, reason }) => orderService.overrideDeliveryCharge(id, { finalCharge, reason }),
+    (order) => ordersKeys.detail(order.id),
+  );
+}

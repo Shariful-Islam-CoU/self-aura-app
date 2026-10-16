@@ -149,6 +149,22 @@ export function useUpdateCustomer() {
   );
 }
 
+export function useUpdateCustomerAvatarUrl() {
+  return useCustomerMutation<{ id: string; avatarUrl: string | null }>(({ id, avatarUrl }) =>
+    customerService.updateAvatarUrl(id, avatarUrl),
+  );
+}
+
+export function useUploadCustomerAvatar() {
+  return useCustomerMutation<{ id: string; formData: FormData }>(({ id, formData }) =>
+    customerService.uploadAvatar(id, formData),
+  );
+}
+
+export function useDeleteCustomerAvatar() {
+  return useCustomerMutation<{ id: string }>(({ id }) => customerService.deleteAvatar(id));
+}
+
 export function useDeactivateCustomer() {
   return useCustomerMutation<{ id: string }>(({ id }) => customerService.deactivate(id));
 }

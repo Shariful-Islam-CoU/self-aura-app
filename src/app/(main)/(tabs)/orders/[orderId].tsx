@@ -5,7 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { getErrorMessage, isApiError } from '@/api';
 import { EmptyState, ErrorState } from '@/components/feedback';
 import { AppHeader, Screen } from '@/components/layout';
-import { Dialog } from '@/components/ui';
+import { Dialog, Input, Text } from '@/components/ui';
 import {
   OrderActionsSection,
   OrderCustomerSection,
@@ -22,6 +22,7 @@ import {
   useCancelOrder,
   useOrderDetails,
   useOrderPaymentSummary,
+  useOverrideOrderDeliveryCharge,
   useUpdateOrderStatus,
 } from '@/features/orders/queries';
 import { ORDER_STATUS_LABELS } from '@/features/orders/labels';
@@ -46,14 +47,20 @@ export default function OrderDetailsScreen() {
   const canView = hasPermission('orders.view');
   const canEdit = hasPermission('orders.edit');
   const canCancel = hasPermission('orders.cancel');
+  const canOverrideCharge = hasPermission('orders.overrideDeliveryCharge');
 
   const orderQuery = useOrderDetails(canView ? orderId : undefined);
   const summaryQuery = useOrderPaymentSummary(canView ? orderId : undefined);
   const updateStatus = useUpdateOrderStatus();
   const cancelOrder = useCancelOrder();
+  const overrideDeliveryCharge = useOverrideOrderDeliveryCharge();
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
+  const [overrideCharge, setOverrideCharge] = useState('');
+  const [overrideReason, setOverrideReason] = useState('');
+  const [overrideError, setOverrideError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const order = orderQuery.data;
@@ -103,6 +110,44 @@ export default function OrderDetailsScreen() {
           setCancelDialogOpen(false);
           toast.error(getErrorMessage(error));
           void orderQuery.refetch();
+        },
+      },
+    );
+  };
+
+  const handleOpenOverride = () => {
+    if (!order) return;
+    overrideDeliveryCharge.reset();
+    setOverrideError(null);
+    setOverrideReason('');
+    // Seed the field with the currently billed fee so the manager edits from
+    // a real value; the backend recomputes the total from its own numbers.
+    setOverrideCharge(
+      String(order.delivery?.finalCharge ?? order.delivery?.charge ?? order.deliveryCharge ?? 0),
+    );
+    setOverrideDialogOpen(true);
+  };
+
+  const handleOverride = () => {
+    if (!order) return;
+    const trimmed = overrideCharge.trim();
+    const parsed = Number(trimmed);
+    if (!trimmed || !Number.isFinite(parsed) || parsed < 0) {
+      setOverrideError('Enter a valid delivery charge (0 or more).');
+      return;
+    }
+    setOverrideError(null);
+    overrideDeliveryCharge.mutate(
+      { id: order.id, finalCharge: parsed, reason: overrideReason.trim() || undefined },
+      {
+        onSuccess: () => {
+          setOverrideDialogOpen(false);
+          toast.success('Delivery charge updated.');
+        },
+        // Keep the editor open on failure so the server's message can be
+        // corrected and the request retried - never fake success.
+        onError: (error) => {
+          setOverrideError(getErrorMessage(error));
         },
       },
     );
@@ -203,7 +248,11 @@ export default function OrderDetailsScreen() {
           summary={summaryQuery.data}
           summaryLoading={summaryQuery.isPending}
         />
-        <OrderDeliverySection order={order} />
+        <OrderDeliverySection
+          order={order}
+          canOverrideCharge={canOverrideCharge}
+          onRequestOverride={handleOpenOverride}
+        />
         {order.note ? <OrderNoteSection note={order.note} /> : null}
         <OrderActionsSection
           order={order}
@@ -251,10 +300,51 @@ export default function OrderDetailsScreen() {
         }}
         secondaryAction={{ label: 'Keep order' }}
       />
+
+      <Dialog
+        visible={overrideDialogOpen}
+        onClose={() => {
+          if (overrideDeliveryCharge.isPending) return;
+          setOverrideDialogOpen(false);
+        }}
+        dismissOnBackdrop={!overrideDeliveryCharge.isPending}
+        title="Override delivery charge"
+        primaryAction={{
+          label: 'Save override',
+          loading: overrideDeliveryCharge.isPending,
+          onPress: handleOverride,
+        }}
+        secondaryAction={{ label: 'Cancel' }}
+      >
+        <View style={styles.overrideFields}>
+          <Text variant="bodySmall" tone="secondary">
+            Changes the billed delivery fee and recomputes the order total on the server. The
+            rule-based charge is kept for reference and the change is audited.
+          </Text>
+          <Input
+            label="Final delivery charge"
+            value={overrideCharge}
+            onChangeText={setOverrideCharge}
+            keyboardType="decimal-pad"
+            editable={!overrideDeliveryCharge.isPending}
+            error={overrideError}
+          />
+          <Input
+            label="Reason (optional)"
+            value={overrideReason}
+            onChangeText={setOverrideReason}
+            editable={!overrideDeliveryCharge.isPending}
+            maxLength={500}
+            multiline
+            helperText="Recorded in the override trail and the audit log."
+          />
+        </View>
+      </Dialog>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { gap: spacing.lg },
+  overrideFields: { gap: spacing.md },
 });

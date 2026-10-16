@@ -55,7 +55,7 @@ export function CustomerCard({ customer, onPress }: CustomerCardProps) {
       ]}
     >
       <View style={styles.topRow}>
-        <Avatar name={customer.name} size="sm" />
+        <Avatar name={customer.name} source={customer.avatarUrl} size="sm" />
         <View style={styles.identity}>
           <Text variant="bodyMedium" numberOfLines={1} style={styles.name}>
             {customer.name}

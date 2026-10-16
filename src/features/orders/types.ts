@@ -84,13 +84,35 @@ export interface OrderShippingAddress {
   country?: string;
 }
 
-/** Immutable delivery-zone snapshot stored on the order at creation time. */
+/** One entry of the delivery-charge override trail (most recent first). */
+export interface OrderDeliveryOverrideEntry {
+  previousCharge: number;
+  newCharge: number;
+  reason?: string;
+  by: string;
+  at: string;
+}
+
+/**
+ * Immutable delivery snapshot stored on the order at creation time.
+ *
+ * `calculatedCharge` is the rule-based fee frozen at creation; `finalCharge`
+ * is the amount actually billed. A management-only manual override changes
+ * `finalCharge` + `total` and records `isOverridden` + history, but NEVER
+ * touches `calculatedCharge` - historical orders stay truthful even after the
+ * underlying rules are edited. Optional fields are absent on orders created
+ * before the override feature landed (backward compatible).
+ */
 export interface OrderDeliverySnapshot {
   id: string;
   code: string;
   name: string;
   baseCharge: number;
   charge: number;
+  /** Fee the pricing rules produced at creation time (never mutated). */
+  calculatedCharge?: number;
+  /** Fee the customer is actually billed (may be overridden by management). */
+  finalCharge?: number;
   freeDeliveryApplied: boolean;
   freeDeliveryThreshold: number | null;
   estimatedMinDays: number;
@@ -99,6 +121,12 @@ export interface OrderDeliverySnapshot {
   district: string;
   area: string;
   postalCode: string;
+  isOverridden?: boolean;
+  overrideReason?: string;
+  overriddenBy?: string;
+  overriddenAt?: string;
+  /** Most recent overrides first (backend keeps the last 10). */
+  overrideHistory?: OrderDeliveryOverrideEntry[];
 }
 
 /** Immutable coupon snapshot stored on the order at creation time. */
@@ -166,6 +194,16 @@ export type OrderSortBy = 'createdAt' | 'orderNumber' | 'total';
 export type SortOrder = 'asc' | 'desc';
 
 /** Query parameters supported by `GET /orders` (validated backend-side). */
+export interface OrderDeliveryChargeOverrideInput {
+  finalCharge: number;
+  reason?: string;
+}
+
+/** `PATCH /orders/:id/delivery-charge` response shape under `data`. */
+export interface OrderDeliveryChargeOverrideResponse {
+  order: Order;
+}
+
 export interface OrderListParams {
   page?: number;
   limit?: number;

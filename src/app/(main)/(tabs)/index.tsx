@@ -9,6 +9,7 @@ import { ErrorState } from '@/components/feedback';
 import { dashboardModule } from '@/navigation';
 import { useAuth } from '@/providers';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useLogo } from '@/hooks/useLogo';
 import { getErrorMessage } from '@/api';
 import { spacing } from '@/theme';
 import { DashboardService } from '@/features/dashboard/services/dashboardService';
@@ -27,8 +28,6 @@ import {
 } from '@/features/dashboard/queries';
 import type { DateRangePreset } from '@/features/dashboard/types';
 
-const logo = require('../../../../assets/logo2.png');
-
 /**
  * Dashboard (Home tab). Backend reports only - every number is calculated
  * by the API, never re-derived on the client.
@@ -41,6 +40,7 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const { hasPermission, hasAnyPermission } = usePermissions();
   const queryClient = useQueryClient();
+  const logo = useLogo();
 
   const [preset, setPreset] = useState<DateRangePreset>('today');
   const [refreshing, setRefreshing] = useState(false);

@@ -175,6 +175,7 @@ export const couriersModule: ModuleDefinition = {
   key: 'couriers',
   label: 'Couriers',
   group: 'Delivery',
+  route: '/couriers',
   icon: 'bicycle-outline',
   description: 'Delivery partner profiles',
   permission: 'couriers.view',
@@ -184,18 +185,20 @@ export const shipmentsModule: ModuleDefinition = {
   key: 'shipments',
   label: 'Shipments',
   group: 'Delivery',
+  route: '/shipments',
   icon: 'boat-outline', // this Ionicons set has no ship/truck glyphs
   description: 'Outgoing shipment tracking',
   permission: 'shipments.view',
 };
 
-export const deliveryZonesModule: ModuleDefinition = {
-  key: 'deliveryZones',
-  label: 'Delivery Zones',
+export const deliveryRulesModule: ModuleDefinition = {
+  key: 'deliveryRules',
+  label: 'Delivery Rules',
   group: 'Delivery',
-  icon: 'map-outline',
-  description: 'Areas, rates and coverage',
-  permission: 'deliveryZones.view',
+  route: '/delivery-rules',
+  icon: 'options-outline',
+  description: 'Checkout delivery charges',
+  permission: 'deliveryRules.view',
 };
 
 export const reviewsModule: ModuleDefinition = {
@@ -269,7 +272,7 @@ export const MODULES: readonly ModuleDefinition[] = [
   reportsModule,
   couriersModule,
   shipmentsModule,
-  deliveryZonesModule,
+  deliveryRulesModule,
   reviewsModule,
   couponsModule,
   usersModule,

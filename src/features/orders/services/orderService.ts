@@ -17,6 +17,9 @@ import type {
  *   GET   /orders/:id/payment-summary - backend-computed ledger totals
  *   PATCH /orders/:id/status     - advance status (orders.edit)
  *   POST  /orders/:id/cancel     - cancel + stock restore (orders.cancel)
+ *   PATCH /orders/:id/delivery-charge - manual delivery-charge override
+ *                                    (orders.overrideDeliveryCharge); the
+ *                                    backend recomputes the total + audits it
  *
  * This service never touches pricing, stock or transition rules - the
  * backend computes and validates everything.
@@ -72,6 +75,14 @@ class OrderService {
     const res = await apiClient.post<ApiEnvelope<{ order: Order }>>(
       `${this.basePath}/${id}/cancel`,
       {},
+    );
+    return res.data.order;
+  }
+
+  async overrideDeliveryCharge(id: string, input: { finalCharge: number; reason?: string }): Promise<Order> {
+    const res = await apiClient.patch<ApiEnvelope<{ order: Order }>>(
+      `${this.basePath}/${id}/delivery-charge`,
+      input,
     );
     return res.data.order;
   }

@@ -1,4 +1,5 @@
 import { Image, Pressable, StyleSheet, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Badge, Text } from '@/components/ui';
@@ -8,6 +9,7 @@ import { formatCurrency } from '@/utils/format';
 import { productStatusLabel, productStatusTone } from '../labels';
 import { getPrimaryImage, mediaImageSource } from '../lib/media';
 import type { Product } from '../types';
+import { env } from '@/config/env';
 
 export interface ProductCardProps {
   product: Product;
@@ -21,9 +23,16 @@ export interface ProductCardProps {
  * - the product model has no margin or discount, so none are invented here.
  * The whole card is one accessible button whose label reads every fact the
  * visual layout shows, so screen readers get the full summary too.
+ *
+ * Long press copies the product's web URL to clipboard.
  */
 export function ProductCard({ product, onPress }: ProductCardProps) {
   const { theme } = useTheme();
+
+  const copyProductUrl = () => {
+    const url = `${env.webBaseUrl}/products/${product.slug}`;
+    void Clipboard.setStringAsync(url);
+  };
 
   const primaryImage = getPrimaryImage(product.images);
   // A downscaled derivative for the 56pt slot - a full delivery-width image
@@ -44,6 +53,7 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
   return (
     <Pressable
       onPress={() => onPress(product.id)}
+      onLongPress={copyProductUrl}
       accessibilityRole="button"
       accessibilityLabel={label}
       style={({ pressed }) => [
