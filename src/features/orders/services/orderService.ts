@@ -1,5 +1,6 @@
 import { apiClient, type ApiEnvelope } from '@/api';
 import type {
+  CreateOrderInput,
   Order,
   OrderListData,
   OrderListParams,
@@ -8,10 +9,12 @@ import type {
 } from '../types';
 
 /**
- * All order API calls (mirrors `self_aura_frontend`'s orderService, minus
- * order creation which is not part of this module's step).
+ * All order API calls (mirrors `self_aura_frontend`'s orderService).
  *
  * Endpoints (permission enforced backend-side):
+ *   POST  /orders                - create an order (orders.create); the
+ *                                  backend prices items, coupon and delivery
+ *                                  itself, so no money field is ever sent
  *   GET   /orders                - paginated list (search/customer/status/payment/dates/sort)
  *   GET   /orders/:id            - single order
  *   GET   /orders/:id/payment-summary - backend-computed ledger totals
@@ -26,6 +29,16 @@ import type {
  */
 class OrderService {
   private readonly basePath = '/orders';
+
+  /**
+   * Creates an order (`orders.create`). The payload carries no money
+   * fields - prices, coupon discount, delivery charge and total are all
+   * computed server-side and returned on the created order.
+   */
+  async create(input: CreateOrderInput): Promise<Order> {
+    const res = await apiClient.post<ApiEnvelope<{ order: Order }>>(this.basePath, input);
+    return res.data.order;
+  }
 
   async list(params: OrderListParams = {}): Promise<OrderListData> {
     const query: Record<string, string | number | undefined> = {

@@ -131,7 +131,7 @@ export function CustomerSocialSection({
 
 function AddressCard({ address }: { address: CustomerAddress }) {
   const { theme } = useTheme();
-  const areaLine = [address.area, address.city].filter(Boolean).join(', ');
+  const areaLine = [address.district, address.area, address.city].filter(Boolean).join(', ');
   const postalLine = [address.postalCode, address.country].filter(Boolean).join(', ');
 
   return (

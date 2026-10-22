@@ -9,9 +9,6 @@ import { radius, spacing } from '@/theme';
 import {
   ACCEPTED_IMAGE_FORMATS_LABEL,
   ACCEPTED_IMAGE_MIME_TYPES,
-  MAX_IMAGE_BYTES,
-  MAX_IMAGE_UPLOAD_LABEL,
-  MAX_PRODUCT_IMAGES,
   mediaImageSource,
   moveDown,
   moveToTop,
@@ -63,7 +60,6 @@ export function ProductImageManager({ product }: { product: Product }) {
 
   const list = draft ?? product.images;
   const dirty = draft !== null;
-  const atLimit = list.length >= MAX_PRODUCT_IMAGES;
 
   const saveError = saveOrder.error ? getErrorMessage(saveOrder.error) : null;
   const errorMessage = saveError ?? localError;
@@ -117,13 +113,10 @@ export function ProductImageManager({ product }: { product: Product }) {
 
   const handleUpload = async () => {
     if (busy) return;
-    // The ceiling is the SERVER count, not the staged one: a staged removal
-    // that has not been committed must not let an upload over the limit
-    // through (same rule the web manager applies to `savedImages`).
-    const remaining = MAX_PRODUCT_IMAGES - product.images.length;
-    if (remaining <= 0) return;
 
-    const picked = await pickProductImages(remaining);
+    // No selection limit: the picker opens with the system maximum, and there
+    // is no per-product count cap on the server either.
+    const picked = await pickProductImages();
     if (!picked.ok) {
       setMessage(null);
       setLocalError(
@@ -135,12 +128,9 @@ export function ProductImageManager({ product }: { product: Product }) {
     const files = picked.files;
     const typeOk = (file: PickedMediaFile) =>
       (ACCEPTED_IMAGE_MIME_TYPES as readonly string[]).includes(file.type);
-    const tooLarge = (file: PickedMediaFile) =>
-      typeof file.size === 'number' && file.size > MAX_IMAGE_BYTES;
 
     const badType = files.filter((file) => !typeOk(file));
-    const oversized = files.filter((file) => typeOk(file) && tooLarge(file));
-    const good = files.filter((file) => typeOk(file) && !tooLarge(file));
+    const queue = files.filter(typeOk);
 
     const notes: string[] = [];
     if (badType.length > 0) {
@@ -148,18 +138,6 @@ export function ProductImageManager({ product }: { product: Product }) {
         badType.length === files.length
           ? `Only ${ACCEPTED_IMAGE_FORMATS_LABEL} images can be uploaded.`
           : `${badType.length} file${badType.length > 1 ? 's were' : ' was'} skipped: only ${ACCEPTED_IMAGE_FORMATS_LABEL} are supported.`,
-      );
-    }
-    if (oversized.length > 0) {
-      notes.push(
-        `${oversized.length} file${oversized.length > 1 ? 's were' : ' was'} skipped: images must be ${MAX_IMAGE_UPLOAD_LABEL} or smaller.`,
-      );
-    }
-
-    const queue = good.slice(0, Math.max(0, remaining));
-    if (queue.length < good.length) {
-      notes.push(
-        `A product may have at most ${MAX_PRODUCT_IMAGES} images; ${good.length - queue.length} file(s) were not uploaded.`,
       );
     }
 
@@ -204,7 +182,7 @@ export function ProductImageManager({ product }: { product: Product }) {
         <View style={styles.headerText}>
           <Text variant="title">Images</Text>
           <Text variant="caption" tone="muted">
-            {list.length}/{MAX_PRODUCT_IMAGES}
+            {list.length} image{list.length === 1 ? '' : 's'}
             {dirty ? ' · unsaved' : ''} · the first image is primary
           </Text>
         </View>
@@ -214,18 +192,12 @@ export function ProductImageManager({ product }: { product: Product }) {
           size="sm"
           onPress={() => void handleUpload()}
           loading={isUploading}
-          disabled={atLimit || saveOrder.isPending}
+          disabled={saveOrder.isPending}
           accessibilityLabel="Choose product images to upload"
         />
       </View>
 
       {progress ? <MediaUploadProgress {...progress} /> : null}
-
-      {atLimit ? (
-        <Text variant="caption" tone="muted">
-          A product may have at most {MAX_PRODUCT_IMAGES} images — remove one to upload another.
-        </Text>
-      ) : null}
 
       {list.length === 0 ? (
         <Text variant="bodySmall" tone="muted">
@@ -374,8 +346,8 @@ export function ProductImageManager({ product }: { product: Product }) {
       ) : null}
 
       <Text variant="caption" tone="muted">
-        {ACCEPTED_IMAGE_FORMATS_LABEL}, up to {MAX_IMAGE_UPLOAD_LABEL} each. Reorder, alt-text edits
-        and removals are saved together, so the whole list is validated before anything changes.
+        {ACCEPTED_IMAGE_FORMATS_LABEL}, no limit on count or file size. Reorder, alt-text edits and
+        removals are saved together, so the whole list is validated before anything changes.
       </Text>
 
       <ProductMediaPreviewModal

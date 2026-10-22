@@ -1,8 +1,11 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { customerService } from '@/features/customers/services/customerService';
 import { dashboardKeys } from '@/features/dashboard/queries';
+import { productService } from '@/features/products/services/productService';
+import { deliveryRuleService } from './services/deliveryRuleService';
 import { orderService } from './services/orderService';
-import type { Order, OrderListFilters, OrderStatus } from './types';
+import type { CreateOrderInput, Order, OrderListFilters, OrderStatus } from './types';
 
 /** Backend caps `limit` at 100; 20 matches the backend default page size. */
 export const ORDERS_PAGE_SIZE = 20;
@@ -17,6 +20,11 @@ export const ordersKeys = {
   list: (filters: OrderListFilters, search: string) => ['orders', 'list', search, filters] as const,
   detail: (id: string) => ['orders', 'detail', id] as const,
   paymentSummary: (id: string) => ['orders', 'detail', id, 'payment-summary'] as const,
+  // Form lookups live under the orders namespace too, but not under
+  // 'list'/'detail', so list/detail invalidations never churn them.
+  customerLookup: (search: string) => ['orders', 'lookup', 'customers', search] as const,
+  productLookup: (search: string) => ['orders', 'lookup', 'products', search] as const,
+  deliveryRules: () => ['orders', 'delivery-rules'] as const,
 };
 
 /**
@@ -64,6 +72,86 @@ export function useOrderPaymentSummary(orderId: string | undefined) {
     queryFn: () => orderService.getPaymentSummary(id),
     enabled: Boolean(id),
     staleTime: 30_000,
+  });
+}
+
+/**
+ * Customer lookup for the create-order form: server-side search over the
+ * existing Customers API, active customers only (the backend rejects an
+ * inactive customer at order creation). Debouncing belongs to the picker.
+ */
+export function useOrderCustomerLookup(search: string, enabled = true) {
+  const term = search.trim();
+  return useQuery({
+    queryKey: ordersKeys.customerLookup(term),
+    queryFn: () =>
+      customerService.list({
+        search: term || undefined,
+        isActive: true,
+        limit: 20,
+        sortBy: 'name',
+        sortOrder: 'asc',
+      }),
+    enabled,
+    staleTime: 30_000,
+    select: (data) => data.customers,
+  });
+}
+
+/**
+ * Product lookup for the create-order form's items editor: server-side
+ * search over the existing Products API, active products only - the same
+ * rule the web order form applies. `limit` uses the backend maximum (100,
+ * `productListQuerySchema`) so the sheet lists every active product, not
+ * just the first page of 20.
+ */
+export function useOrderProductLookup(search: string, enabled = true) {
+  const term = search.trim();
+  return useQuery({
+    queryKey: ordersKeys.productLookup(term),
+    queryFn: () =>
+      productService.list({
+        search: term || undefined,
+        isActive: true,
+        limit: 100,
+        sortBy: 'name',
+        sortOrder: 'asc',
+      }),
+    enabled,
+    staleTime: 30_000,
+    select: (data) => data.items,
+  });
+}
+
+/**
+ * Active delivery options for the create-order form: the same public list
+ * the storefront checkout renders, so staff pick from an identical set.
+ * Cached briefly - rules change rarely, but a deactivation should reach the
+ * form within a minute (the backend re-validates the rule at creation).
+ */
+export function useDeliveryRules() {
+  return useQuery({
+    queryKey: ordersKeys.deliveryRules(),
+    queryFn: () => deliveryRuleService.fetchActiveDeliveryRules(),
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Order creation. The server responds with the fully priced order, so its
+ * detail cache is seeded from that authoritative response, then the order
+ * list group (which also feeds customer order history) and the dashboard
+ * (recent orders + KPIs) are invalidated so every screen converges.
+ */
+export function useCreateOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateOrderInput) => orderService.create(input),
+    onSuccess: (order) => {
+      queryClient.setQueryData(ordersKeys.detail(order.id), order);
+      void queryClient.invalidateQueries({ queryKey: ['orders', 'list'] });
+      void queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+    },
   });
 }
 

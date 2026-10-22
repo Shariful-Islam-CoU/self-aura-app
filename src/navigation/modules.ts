@@ -205,6 +205,7 @@ export const reviewsModule: ModuleDefinition = {
   key: 'reviews',
   label: 'Reviews',
   group: 'Customer',
+  route: '/reviews',
   icon: 'star-outline',
   description: 'Moderate customer reviews',
   permission: 'reviews.view',

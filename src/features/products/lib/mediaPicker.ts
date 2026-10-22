@@ -9,20 +9,20 @@ export type MediaMultiPickResult =
  * Shared photo/video picker for the product media managers.
  *
  * Multi-select mirrors the web manager's `multiple` file input: the picker
- * returns every asset it was given (capped by `selectionLimit`, which the
- * caller derives from the server's remaining capacity), and the MANAGER
- * filters by MIME type and size exactly like the web component does - one
- * place decides what is acceptable, so the skip/limit copy always matches
- * what was actually filtered out. On platforms whose system picker cannot
- * multi-select, a single asset comes back and the queue handles it as a
- * one-file batch.
+ * returns every asset it was given. `selectionLimit` defaults to 0, which the
+ * SDK documents as "the maximum that the system supports" - there is no
+ * product-media count cap. The MANAGER filters by MIME type exactly like the
+ * web component does - one place decides what is acceptable, so the skip copy
+ * always matches what was actually filtered out. On platforms whose system
+ * picker cannot multi-select, a single asset comes back and the queue handles
+ * it as a one-file batch.
  *
  * Permissions are requested first so a denial is surfaced before the picker
  * opens (SDK 57 docs: on iOS the library needs permission to read the
  * original file). Cancellation and denial are handled, never thrown. The
- * MIME/size checks are convenience filters only - the backend sniffs the
- * actual bytes, validates dimensions and enforces its own caps, so its
- * rejection is always authoritative. All uploads go through the
+ * MIME checks are convenience filters only - the backend sniffs the actual
+ * bytes and validates dimensions, so its rejection is always authoritative.
+ * All uploads go through the
  * authenticated backend media API; the app never talks to Cloudinary
  * directly, so no media credentials exist in the app.
  */
@@ -60,7 +60,7 @@ function toPickedFile(
 
 async function pickAssets(
   mediaType: 'images' | 'videos',
-  selectionLimit: number,
+  selectionLimit = 0,
 ): Promise<MediaMultiPickResult> {
   if (!(await requestLibraryPermission())) {
     return { ok: false, reason: 'denied' };
@@ -70,7 +70,8 @@ async function pickAssets(
     mediaTypes: [mediaType],
     quality: 1,
     allowsMultipleSelection: true,
-    selectionLimit: Math.max(1, selectionLimit),
+    // 0 is the SDK's "maximum the system supports" value.
+    selectionLimit,
     orderedSelection: true,
   });
 
@@ -92,17 +93,17 @@ async function pickAssets(
 }
 
 /**
- * Picks product images (JPEG/PNG/WebP) for upload, up to `selectionLimit`
- * files in one system-picker session.
+ * Picks product images (JPEG/PNG/WebP) for upload. There is no count limit;
+ * pass `selectionLimit` only to cap one picker session.
  */
-export function pickProductImages(selectionLimit: number): Promise<MediaMultiPickResult> {
+export function pickProductImages(selectionLimit = 0): Promise<MediaMultiPickResult> {
   return pickAssets('images', selectionLimit);
 }
 
 /**
- * Picks product videos (MP4/MOV/WebM) for upload, up to `selectionLimit`
- * files in one system-picker session.
+ * Picks product videos (MP4/MOV/WebM) for upload. There is no count limit;
+ * pass `selectionLimit` only to cap one picker session.
  */
-export function pickProductVideos(selectionLimit: number): Promise<MediaMultiPickResult> {
+export function pickProductVideos(selectionLimit = 0): Promise<MediaMultiPickResult> {
   return pickAssets('videos', selectionLimit);
 }

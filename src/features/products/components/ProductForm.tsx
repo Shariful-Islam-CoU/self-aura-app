@@ -289,6 +289,20 @@ export function ProductForm({
         </Text>
       ) : null}
 
+      <Input
+        label="Description"
+        value={values.description}
+        onChangeText={(text) => updateField('description', text)}
+        error={fieldErrors.description}
+        helperText="Optional. 2000 characters max"
+        placeholder="Details, fabric, care instructions…"
+        multiline
+        numberOfLines={4}
+        maxLength={2000}
+        editable={!isSubmitting}
+        accessibilityLabel="Product description"
+      />
+
       <Text variant="label" tone="secondary">
         Pricing
       </Text>

@@ -17,7 +17,10 @@ export interface CustomerAddress {
   phone?: string;
   addressLine: string;
   area?: string;
-  city: string;
+  /** Required: the district is what delivery pricing resolves against. */
+  district: string;
+  /** Optional: descriptive only, so a district alone is enough. */
+  city?: string;
   postalCode?: string;
   country?: string;
   isDefault: boolean;
@@ -84,7 +87,8 @@ export interface CustomerAddressInput {
   phone?: string;
   addressLine: string;
   area?: string;
-  city: string;
+  district: string;
+  city?: string;
   postalCode?: string;
   country?: string;
   isDefault: boolean;

@@ -118,8 +118,8 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   logo: {
-    width: 48,
-    height: 48,
+    width: 52,
+    height: 52,
     borderRadius: 8,
   },
   displayTitle: {

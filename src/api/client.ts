@@ -199,6 +199,15 @@ export class ApiClient {
    * file references) instead of a serialized object. Used for the
    * media-upload endpoints (product/category images): files always go
    * through the backend's authenticated upload API, never a third party.
+   *
+   * This path depends on React Native's fetch, NOT Expo SDK 57's WinterCG
+   * `expo/fetch`: local files are appended as the RN-proprietary
+   * `{ uri, name, type }` part, and `expo/fetch` rejects that shape with
+   * "Unsupported FormDataPart implementation" (which the catch below would
+   * report as a generic network failure). `EXPO_PUBLIC_USE_RN_FETCH=1` keeps
+   * RN's fetch installed as the global - see .env / .env.example. RN's fetch
+   * also streams the file from disk instead of buffering it, which matters
+   * for large (now uncapped) video uploads.
    */
   upload<T>(endpoint: string, formData: FormData, options?: RequestOptions): Promise<T> {
     return this.request<T>('POST', endpoint, options, formData, true);

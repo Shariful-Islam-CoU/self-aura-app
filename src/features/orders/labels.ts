@@ -1,5 +1,12 @@
 import type { StatusTone } from '@/theme';
-import type { OrderSource, OrderStatus, PaymentMethod, PaymentStatus } from './types';
+import {
+  ORDER_SOURCES,
+  PAYMENT_METHODS,
+  type OrderSource,
+  type OrderStatus,
+  type PaymentMethod,
+  type PaymentStatus,
+} from './types';
 
 /**
  * Display labels and precise tone mappings for order domain statuses.
@@ -43,6 +50,17 @@ export const ORDER_SOURCE_LABELS: Record<OrderSource, string> = {
   manual: 'Manual',
   other: 'Other',
 };
+
+/**
+ * Select options for the create-order form, derived from the same
+ * constants + label maps the detail screens render, so a label can never
+ * drift between display and selection.
+ */
+export const ORDER_PAYMENT_METHOD_OPTIONS: readonly { value: string; label: string }[] =
+  PAYMENT_METHODS.map((method) => ({ value: method, label: PAYMENT_METHOD_LABELS[method] }));
+
+export const ORDER_SOURCE_OPTIONS: readonly { value: string; label: string }[] =
+  ORDER_SOURCES.map((source) => ({ value: source, label: ORDER_SOURCE_LABELS[source] }));
 
 /** Explicit status -> tone mapping (never relies on keyword guessing). */
 export const ORDER_STATUS_TONES: Record<OrderStatus, StatusTone> = {

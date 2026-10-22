@@ -26,7 +26,7 @@ export function CustomerCard({ customer, onPress }: CustomerCardProps) {
   const defaultAddress =
     customer.addresses.find((address) => address.isDefault) ?? customer.addresses[0];
   const addressLine = defaultAddress
-    ? [defaultAddress.addressLine, defaultAddress.city].filter(Boolean).join(', ')
+    ? [defaultAddress.addressLine, defaultAddress.district, defaultAddress.city].filter(Boolean).join(', ')
     : null;
 
   const label = [

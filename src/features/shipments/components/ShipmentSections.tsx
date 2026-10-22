@@ -146,7 +146,7 @@ export function ShipmentAddressSection({ shipment }: { shipment: Shipment }) {
       <Text variant="subtitle">{address.recipientName}</Text>
       <Text variant="bodyMedium">{address.addressLine}</Text>
       <Text variant="bodyMedium" tone="secondary">
-        {[address.area, address.city].filter(Boolean).join(', ')}
+        {[address.district, address.area, address.city].filter(Boolean).join(', ')}
       </Text>
       <Text variant="bodyMedium" tone="secondary">
         {[address.postalCode, address.country].filter(Boolean).join(', ')}

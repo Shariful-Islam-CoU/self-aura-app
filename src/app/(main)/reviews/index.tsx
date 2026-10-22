@@ -27,7 +27,7 @@ export default function ReviewsScreen() {
           <Text style={[styles.status, { color: item.status === 'approved' ? theme.colors.success : item.status === 'rejected' ? theme.colors.danger : theme.colors.warning }]}>{item.status}</Text>
         </View>
         <Text style={[styles.title, { color: theme.colors.text }]}>{item.comment.substring(0, 80)}{item.comment.length > 80 ? '...' : ''}</Text>
-        <Text style={[styles.meta, { color: theme.colors.textMuted }]}>{item.product.name ?? 'Product'} · {item.customer.displayName ?? item.customer.name ?? 'Customer'}</Text>
+        <Text style={[styles.meta, { color: theme.colors.textMuted }]}>{item.product.name ?? 'Product'} · {item.customer.name ?? 'Customer'}</Text>
         <Text style={[styles.meta, { color: theme.colors.textMuted }]}>{new Date(item.createdAt).toLocaleDateString()}</Text>
       </View>
     </View>

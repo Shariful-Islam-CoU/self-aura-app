@@ -19,8 +19,9 @@ export type MediaUploadProgressProps = UploadProgressState;
  * Upload queue indicator (the mobile counterpart of the web app's
  * `MediaUploadProgress`).
  *
- * A product video can be 100 MB, so "Uploading 2 of 3: clip.mp4" says which
- * file is moving and where the batch stands - the two facts a user needs.
+ * A product video can be hundreds of megabytes, so "Uploading 2 of 3: clip.mp4"
+ * says which file is moving and where the batch stands - the two facts a user
+ * needs.
  * React Native's fetch-based request pipeline exposes no byte-level upload
  * progress, so the spinner is honest about being indeterminate rather than
  * faking a percentage; `role="status"` + a polite live region mean the

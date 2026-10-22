@@ -79,7 +79,7 @@ export interface OrderShippingAddress {
   addressLine: string;
   area?: string;
   district?: string;
-  city: string;
+  city?: string;
   postalCode?: string;
   country?: string;
 }
@@ -235,6 +235,85 @@ export interface OrderPaymentSummary {
   netReceived: number;
   payableAmount: number;
   outstandingAmount: number;
+}
+
+/**
+ * `POST /orders` payload pieces (mirrors `CreateOrderInput` /
+ * `OrderItemInput` / `OrderShippingAddressInput` in `self_aura_frontend`).
+ *
+ * The client sends product ids + quantities only: no prices, no subtotal,
+ * no discount and no delivery charge - the backend derives every money
+ * value from the product records, the validated coupon and the selected
+ * delivery rule.
+ */
+export interface OrderItemInput {
+  product: string;
+  quantity: number;
+}
+
+export interface OrderShippingAddressInput {
+  recipientName?: string;
+  phone?: string;
+  addressLine: string;
+  area?: string;
+  /**
+   * Required by the backend so the delivery address is complete (district OR
+   * area); the delivery CHARGE itself comes from the selected delivery rule.
+   */
+  district: string;
+  /** Optional descriptive text - the district alone identifies the location. */
+  city?: string;
+  postalCode?: string;
+  country?: string;
+}
+
+export interface CreateOrderInput {
+  customer: string;
+  items: OrderItemInput[];
+  paymentMethod?: PaymentMethod;
+  source?: OrderSource;
+  shippingAddress: OrderShippingAddressInput;
+  /** Required by the backend for bKash/Nagad, rejected for every other method. */
+  transactionId?: string;
+  /** Optional Bangladesh sender number for manual mobile-money payments. */
+  senderPhone?: string;
+  note?: string;
+  /**
+   * Active delivery rule whose price becomes the order's delivery charge.
+   * Omitted only when no active rules exist - the backend then falls back to
+   * a 0 delivery charge.
+   */
+  selectedRuleId?: string;
+}
+
+/**
+ * One ACTIVE delivery rule as published for customers (simplified).
+ *
+ * Mirrors the backend `getPublicRules` output: id, name, price and ETA only -
+ * no admin fields. The list is backend-sorted by price descending (highest
+ * first), the same order the storefront checkout uses.
+ */
+export interface PublicDeliveryRule {
+  id: string;
+  name: string;
+  price: number;
+  estimatedMinDays: number;
+  estimatedMaxDays: number;
+}
+
+/**
+ * Form-only draft line item for the create form. `unitPrice`/`stock` are
+ * display hints loaded from the product record - the backend recomputes
+ * authoritative prices and totals at creation.
+ */
+export interface DraftOrderItem {
+  key: string;
+  productId: string;
+  productName: string;
+  sku: string;
+  unitPrice: number;
+  stock: number;
+  quantity: string;
 }
 
 /** Ready-made filter/sort state shared between the list UI and query key. */

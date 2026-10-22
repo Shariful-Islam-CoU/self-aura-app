@@ -10,9 +10,6 @@ import { radius, spacing } from '@/theme';
 import {
   ACCEPTED_VIDEO_FORMATS_LABEL,
   ACCEPTED_VIDEO_MIME_TYPES,
-  MAX_PRODUCT_VIDEOS,
-  MAX_VIDEO_BYTES,
-  MAX_VIDEO_UPLOAD_LABEL,
   formatDuration,
   moveDown,
   moveUp,
@@ -56,7 +53,6 @@ export function ProductVideoManager({ product }: { product: Product }) {
 
   const list = draft ?? product.videos;
   const dirty = draft !== null;
-  const atLimit = list.length >= MAX_PRODUCT_VIDEOS;
 
   const saveError = saveOrder.error ? getErrorMessage(saveOrder.error) : null;
   const errorMessage = saveError ?? localError;
@@ -110,13 +106,10 @@ export function ProductVideoManager({ product }: { product: Product }) {
 
   const handleUpload = async () => {
     if (busy) return;
-    // The ceiling is the SERVER count, not the staged one: a staged removal
-    // that has not been committed must not let an upload over the limit
-    // through (same rule the web manager applies to `savedVideos`).
-    const remaining = MAX_PRODUCT_VIDEOS - product.videos.length;
-    if (remaining <= 0) return;
 
-    const picked = await pickProductVideos(remaining);
+    // No selection limit: the picker opens with the system maximum, and there
+    // is no per-product count cap on the server either.
+    const picked = await pickProductVideos();
     if (!picked.ok) {
       setMessage(null);
       setLocalError(
@@ -128,12 +121,9 @@ export function ProductVideoManager({ product }: { product: Product }) {
     const files = picked.files;
     const typeOk = (file: PickedMediaFile) =>
       (ACCEPTED_VIDEO_MIME_TYPES as readonly string[]).includes(file.type);
-    const tooLarge = (file: PickedMediaFile) =>
-      typeof file.size === 'number' && file.size > MAX_VIDEO_BYTES;
 
     const badType = files.filter((file) => !typeOk(file));
-    const oversized = files.filter((file) => typeOk(file) && tooLarge(file));
-    const good = files.filter((file) => typeOk(file) && !tooLarge(file));
+    const queue = files.filter(typeOk);
 
     const notes: string[] = [];
     if (badType.length > 0) {
@@ -141,18 +131,6 @@ export function ProductVideoManager({ product }: { product: Product }) {
         badType.length === files.length
           ? `Only ${ACCEPTED_VIDEO_FORMATS_LABEL} videos can be uploaded.`
           : `${badType.length} file${badType.length > 1 ? 's were' : ' was'} skipped: only ${ACCEPTED_VIDEO_FORMATS_LABEL} are supported.`,
-      );
-    }
-    if (oversized.length > 0) {
-      notes.push(
-        `${oversized.length} file${oversized.length > 1 ? 's were' : ' was'} skipped: videos must be ${MAX_VIDEO_UPLOAD_LABEL} or smaller.`,
-      );
-    }
-
-    const queue = good.slice(0, Math.max(0, remaining));
-    if (queue.length < good.length) {
-      notes.push(
-        `A product may have at most ${MAX_PRODUCT_VIDEOS} videos; ${good.length - queue.length} file(s) were not uploaded.`,
       );
     }
 
@@ -197,7 +175,7 @@ export function ProductVideoManager({ product }: { product: Product }) {
         <View style={styles.headerText}>
           <Text variant="title">Videos</Text>
           <Text variant="caption" tone="muted">
-            {list.length}/{MAX_PRODUCT_VIDEOS}
+            {list.length} video{list.length === 1 ? '' : 's'}
             {dirty ? ' · unsaved' : ''} · tap a poster to preview
           </Text>
         </View>
@@ -207,18 +185,12 @@ export function ProductVideoManager({ product }: { product: Product }) {
           size="sm"
           onPress={() => void handleUpload()}
           loading={isUploading}
-          disabled={atLimit || saveOrder.isPending}
+          disabled={saveOrder.isPending}
           accessibilityLabel="Choose product videos to upload"
         />
       </View>
 
       {progress ? <MediaUploadProgress {...progress} /> : null}
-
-      {atLimit ? (
-        <Text variant="caption" tone="muted">
-          A product may have at most {MAX_PRODUCT_VIDEOS} videos — remove one to upload another.
-        </Text>
-      ) : null}
 
       {list.length === 0 ? (
         <Text variant="bodySmall" tone="muted">
@@ -364,8 +336,8 @@ export function ProductVideoManager({ product }: { product: Product }) {
       ) : null}
 
       <Text variant="caption" tone="muted">
-        {ACCEPTED_VIDEO_FORMATS_LABEL}, up to {MAX_VIDEO_UPLOAD_LABEL} each. Playback streams from
-        the backend; nothing is edited or re-encoded on the device. Reorder and removals are saved
+        {ACCEPTED_VIDEO_FORMATS_LABEL}, no limit on count or file size. Playback streams from the
+        backend; nothing is edited or re-encoded on the device. Reorder and removals are saved
         together, so the whole list is validated before anything changes.
       </Text>
 

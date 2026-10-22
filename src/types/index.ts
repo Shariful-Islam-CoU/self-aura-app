@@ -137,6 +137,7 @@ export type PermissionKey =
   | 'reviews.view'
   | 'reviews.approve'
   | 'reviews.reject'
+  | 'reviews.reply'
   | 'reviews.delete'
   // Coupons
   | 'coupons.view'

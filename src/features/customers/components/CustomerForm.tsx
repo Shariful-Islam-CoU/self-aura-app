@@ -56,6 +56,7 @@ interface AddressFormValues {
   phone: string;
   addressLine: string;
   area: string;
+  district: string;
   city: string;
   postalCode: string;
   country: string;
@@ -101,6 +102,7 @@ const emptyAddress = (): AddressFormValues => ({
   phone: '',
   addressLine: '',
   area: '',
+  district: '',
   city: '',
   postalCode: '',
   country: '',
@@ -112,6 +114,7 @@ const isBlankAddress = (address: AddressFormValues): boolean =>
   !address.phone.trim() &&
   !address.addressLine.trim() &&
   !address.area.trim() &&
+  !address.district.trim() &&
   !address.city.trim() &&
   !address.postalCode.trim() &&
   !address.country.trim();
@@ -142,7 +145,8 @@ export function CustomerForm({
         phone: address.phone ?? '',
         addressLine: address.addressLine,
         area: address.area ?? '',
-        city: address.city,
+        district: address.district ?? '',
+        city: address.city ?? '',
         postalCode: address.postalCode ?? '',
         country: address.country ?? '',
         isDefault: address.isDefault,
@@ -280,8 +284,10 @@ export function CustomerForm({
         message = 'Address line must be at most 200 characters';
       } else if (address.area.trim().length > 100) {
         message = 'Area must be at most 100 characters';
-      } else if (!address.city.trim()) {
-        message = 'City is required';
+      } else if (!address.district.trim()) {
+        message = 'District is required';
+      } else if (address.district.trim().length > 100) {
+        message = 'District must be at most 100 characters';
       } else if (address.city.trim().length > 100) {
         message = 'City must be at most 100 characters';
       } else if (address.postalCode.trim().length > 20) {
@@ -332,7 +338,8 @@ export function CustomerForm({
       phone: address.phone.trim() || undefined,
       addressLine: address.addressLine.trim(),
       area: address.area.trim() || undefined,
-      city: address.city.trim(),
+      district: address.district.trim(),
+      city: address.city.trim() || undefined,
       postalCode: address.postalCode.trim() || undefined,
       country: address.country.trim() || undefined,
       isDefault: address.isDefault,
@@ -373,6 +380,7 @@ export function CustomerForm({
           values.addresses.map(
             (_, index) =>
               serverErrors[`addresses.${index}.addressLine`]?.[0] ??
+              serverErrors[`addresses.${index}.district`]?.[0] ??
               serverErrors[`addresses.${index}.city`]?.[0] ??
               serverErrors[`addresses.${index}.label`]?.[0] ??
               serverErrors[`addresses.${index}.phone`]?.[0] ??
@@ -554,6 +562,14 @@ export function CustomerForm({
             accessibilityLabel={`Address ${index + 1} address line`}
           />
           <Input
+            label="District"
+            required
+            value={address.district}
+            onChangeText={(text) => updateAddress(index, 'district', text)}
+            placeholder="e.g. Dhaka"
+            accessibilityLabel={`Address ${index + 1} district`}
+          />
+          <Input
             label="Area"
             value={address.area}
             onChangeText={(text) => updateAddress(index, 'area', text)}
@@ -562,10 +578,9 @@ export function CustomerForm({
           />
           <Input
             label="City"
-            required
             value={address.city}
             onChangeText={(text) => updateAddress(index, 'city', text)}
-            placeholder="e.g. Dhaka"
+            placeholder="Optional"
             accessibilityLabel={`Address ${index + 1} city`}
           />
           <Input

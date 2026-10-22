@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import { useTheme } from '@/providers';
 
 /**
- * Orders feature stack (list -> detail -> future forms).
+ * Orders feature stack (list -> detail -> create form).
  *
  * Headerless by design: every screen renders the shared `AppHeader`
  * (Step 3) so root and nested screens speak the same header language.

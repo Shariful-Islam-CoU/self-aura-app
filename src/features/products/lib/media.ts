@@ -4,28 +4,17 @@ import type { ProductImage } from '../types';
 /**
  * Client-side mirrors of the server's media allow-lists
  * (`self_aura_backend/src/config/media.ts`). Convenience filters only - the
- * server sniffs the bytes, checks dimensions and enforces its own size cap,
- * so a file that slips past these lists is rejected properly by the backend
- * (whose message is always the right one to show). The size ceilings below
- * are the SAME defaults the server enforces (the web app's `lib/media.ts`
- * mirrors them too) - they exist so an obviously oversized file is refused
- * before it is sent over the network, never instead of the server's check.
+ * server sniffs the bytes and checks dimensions, so a file that slips past
+ * these lists is rejected properly by the backend (whose message is always
+ * the right one to show).
+ *
+ * There is deliberately no count limit and no size limit for product media:
+ * any number of images/videos of any size is accepted, so no client-side
+ * ceiling constants exist here either.
  */
 export const ACCEPTED_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 
 export const ACCEPTED_VIDEO_MIME_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'] as const;
-
-/** Server defaults: `mediaConfig.maxImageBytes` / `maxVideoBytes`. */
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-export const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
-
-/** Human-readable size ceilings for user-facing copy (never for checks). */
-export const MAX_IMAGE_UPLOAD_LABEL = '5 MB';
-export const MAX_VIDEO_UPLOAD_LABEL = '100 MB';
-
-/** Backend caps: a product may hold up to 10 images and 5 videos. */
-export const MAX_PRODUCT_IMAGES = 10;
-export const MAX_PRODUCT_VIDEOS = 5;
 
 /**
  * Human-readable format names for user-facing copy (the MIME lists above are

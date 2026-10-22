@@ -36,8 +36,11 @@ import type {
  *
  * Media uploads are multipart (`file` + optional `alt`) sent through the
  * authenticated API client. The app never holds Cloudinary credentials -
- * the backend owns the provider entirely. Video files can be large, so the
- * video uploads use a longer timeout than photos.
+ * the backend owns the provider entirely. There is no size limit on media, so
+ * both uploads use generous timeouts that scale with a large file rather than
+ * aborting a legitimate transfer. The timeout still bounds a stalled network
+ * (the AbortController cancels the request), it just no longer acts as an
+ * implicit size ceiling.
  */
 class ProductService {
   private readonly basePath = '/products';
@@ -116,7 +119,7 @@ class ProductService {
     const res = await apiClient.upload<ApiEnvelope<ProductImagesData>>(
       `${this.basePath}/${id}/images`,
       this.buildMediaFormData(file, alt),
-      { timeoutMs: 60_000 },
+      { timeoutMs: 300_000 },
     );
     return res.data;
   }
@@ -133,7 +136,7 @@ class ProductService {
     const res = await apiClient.upload<ApiEnvelope<ProductVideosData>>(
       `${this.basePath}/${id}/videos`,
       this.buildMediaFormData(file, alt),
-      { timeoutMs: 180_000 },
+      { timeoutMs: 1_800_000 },
     );
     return res.data;
   }

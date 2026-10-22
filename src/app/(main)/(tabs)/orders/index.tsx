@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { getErrorMessage } from '@/api';
 import { EmptyState, ErrorState, LoadingIndicator } from '@/components/feedback';
 import { AppHeader, Screen } from '@/components/layout';
-import { Button, SearchInput, Select, type SelectOption } from '@/components/ui';
+import { Button, IconButton, SearchInput, Select, type SelectOption } from '@/components/ui';
 import {
   OrderCard,
   OrderFiltersSheet,
@@ -39,6 +39,7 @@ export default function OrdersListScreen() {
   const { hasPermission } = usePermissions();
   const { theme } = useTheme();
   const canViewOrders = hasPermission('orders.view');
+  const canCreateOrder = hasPermission('orders.create');
 
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebouncedValue(searchInput, 400);
@@ -128,7 +129,21 @@ export default function OrdersListScreen() {
     setFiltersOpen(false);
   };
 
-  const header = <AppHeader variant="feature" title="Orders" />;
+  const header = (
+    <AppHeader
+      variant="feature"
+      title="Orders"
+      actions={
+        canCreateOrder ? (
+          <IconButton
+            icon="add-outline"
+            accessibilityLabel="Create order"
+            onPress={() => router.push('/orders/new')}
+          />
+        ) : null
+      }
+    />
+  );
 
   if (!canViewOrders) {
     return (
@@ -186,6 +201,8 @@ export default function OrdersListScreen() {
               icon="receipt-outline"
               title="No orders yet"
               description="Orders will appear here as soon as they are placed."
+              actionLabel={canCreateOrder ? 'Create order' : undefined}
+              onAction={canCreateOrder ? () => router.push('/orders/new') : undefined}
             />
           )
         }

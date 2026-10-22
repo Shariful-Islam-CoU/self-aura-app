@@ -45,6 +45,7 @@ export default function ProfileScreen() {
     phone: '',
     addressLine: '',
     area: '',
+    district: '',
     city: '',
     postalCode: '',
     country: 'Bangladesh',
@@ -77,6 +78,7 @@ export default function ProfileScreen() {
           phone: a.phone || customer.phone || '',
           addressLine: a.addressLine || '',
           area: a.area || '',
+          district: a.district || '',
           city: a.city || '',
           postalCode: a.postalCode || '',
           country: a.country || 'Bangladesh',
@@ -399,6 +401,13 @@ export default function ProfileScreen() {
                 onChangeText={(value) => setAddress({ ...address, addressLine: value })}
                 editable={!saving}
               />
+              <Input
+                label="District"
+                value={address.district}
+                onChangeText={(value) => setAddress({ ...address, district: value })}
+                autoCapitalize="words"
+                editable={!saving}
+              />
               <View style={styles.grid}>
                 <Input
                   label="Area/Thana"
@@ -408,7 +417,7 @@ export default function ProfileScreen() {
                   editable={!saving}
                 />
                 <Input
-                  label="City"
+                  label="City (Optional)"
                   value={address.city}
                   onChangeText={(value) => setAddress({ ...address, city: value })}
                   autoCapitalize="words"
@@ -553,7 +562,7 @@ function AddressCard({
   onCall?: (phone: string) => void;
 }) {
   const { theme } = useTheme();
-  const areaLine = [address.area, address.city].filter(Boolean).join(', ');
+  const areaLine = [address.district, address.area, address.city].filter(Boolean).join(', ');
   const postalLine = [address.postalCode, address.country].filter(Boolean).join(', ');
 
   return (
