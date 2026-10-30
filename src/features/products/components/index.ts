@@ -1,5 +1,6 @@
 export { ProductCard, type ProductCardProps } from './ProductCard';
 export { ProductListSkeleton } from './ProductListSkeleton';
+export { ProductTotalsBar, type ProductTotalsBarProps } from './ProductTotalsBar';
 export { ProductDetailsSkeleton } from './ProductDetailsSkeleton';
 export { SectionCard, DetailRow } from './SectionCard';
 export { ProductForm, type ProductFormProps } from './ProductForm';

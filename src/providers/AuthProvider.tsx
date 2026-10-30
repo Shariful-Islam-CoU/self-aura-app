@@ -20,6 +20,10 @@ import {
 } from '@/features/auth';
 import { queryClient } from '@/store';
 import type { PermissionKey } from '@/types';
+import {
+  registerDeviceForPush,
+  unregisterDeviceForPush,
+} from '@/services/pushNotifications';
 
 /**
  * Authentication/session state for the mobile app.
@@ -101,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(user);
           setStatus('authenticated');
           await setStoredUser(user);
+          void registerDeviceForPush();
         } catch (err) {
           if (cancelled) return;
           // On auth failure, clear session; other errors fall back to cached user if available
@@ -136,6 +141,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     try {
+      await unregisterDeviceForPush();
+    } catch {
+      // Best effort
+    }
+    try {
       await clearStoredSession();
       queryClient.clear();
     } catch {
@@ -165,6 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('authenticated');
     setError(null);
     setShellPreview(false);
+    void registerDeviceForPush();
   }, []);
 
   const permissions = useMemo(() => user?.permissions ?? [], [user]);

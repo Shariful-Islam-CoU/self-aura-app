@@ -15,6 +15,8 @@ import type { Order } from '../types';
 export interface OrderCardProps {
   order: Order;
   onPress: (orderId: string) => void;
+  /** Long press - the owner opens the customer contact sheet. */
+  onLongPress?: (order: Order) => void;
 }
 
 /**
@@ -22,8 +24,11 @@ export interface OrderCardProps {
  * number + total, customer + date, then status and payment badges. The
  * whole card is one accessible button whose label reads every fact the
  * visual layout shows, so screen readers get the full summary too.
+ *
+ * A long press is delegated to the screen (when provided) so the customer's
+ * contact details can be shown and copied.
  */
-export function OrderCard({ order, onPress }: OrderCardProps) {
+export function OrderCard({ order, onPress, onLongPress }: OrderCardProps) {
   const { theme } = useTheme();
 
   const label = [
@@ -38,8 +43,12 @@ export function OrderCard({ order, onPress }: OrderCardProps) {
   return (
     <Pressable
       onPress={() => onPress(order.id)}
+      onLongPress={onLongPress ? () => onLongPress(order) : undefined}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityHint={
+        onLongPress ? 'Long press to view and copy customer contact details' : undefined
+      }
       style={({ pressed }) => [
         styles.card,
         {

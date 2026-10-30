@@ -7,7 +7,8 @@ import { EmptyState, ErrorState, LoadingIndicator } from '@/components/feedback'
 import { AppHeader, Screen } from '@/components/layout';
 import { IconButton, SearchInput, Select, type SelectOption } from '@/components/ui';
 import { useCategoriesList } from '@/features/categories/queries';
-import { ProductCard, ProductListSkeleton } from '@/features/products/components';
+import { useInventoryTotals } from '@/features/inventory/queries';
+import { ProductCard, ProductListSkeleton, ProductTotalsBar } from '@/features/products/components';
 import { useProductsInfinite } from '@/features/products/queries';
 import type {
   Product,
@@ -66,6 +67,7 @@ export default function ProductsListScreen() {
   const search = debouncedSearch.trim();
   const canView = hasPermission('products.view');
   const canCreate = hasPermission('products.create');
+  const canSeeTotals = canView && hasPermission('reports.inventory');
 
   const categoriesQuery = useCategoriesList();
   const categoryOptions = useMemo<SelectOption[]>(
@@ -87,6 +89,7 @@ export default function ProductsListScreen() {
     [categoryFilter, statusFilter, sort],
   );
   const productsQuery = useProductsInfinite(filters, search);
+  const totalsQuery = useInventoryTotals(canSeeTotals);
 
   const hasCriteria = statusFilter !== 'all' || categoryFilter !== '' || search.length > 0;
 
@@ -111,6 +114,7 @@ export default function ProductsListScreen() {
     setRefreshing(true);
     try {
       await productsQuery.refetch();
+      if (canSeeTotals) await totalsQuery.refetch();
     } finally {
       setRefreshing(false);
     }
@@ -183,6 +187,11 @@ export default function ProductsListScreen() {
         keyboardDismissMode="on-drag"
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.4}
+        ListHeaderComponent={
+          canSeeTotals ? (
+            <ProductTotalsBar totals={totalsQuery.data} isLoading={totalsQuery.isPending} />
+          ) : null
+        }
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

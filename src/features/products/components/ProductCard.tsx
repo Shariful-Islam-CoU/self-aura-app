@@ -1,4 +1,4 @@
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Platform, Pressable, Share, StyleSheet, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -24,14 +24,32 @@ export interface ProductCardProps {
  * The whole card is one accessible button whose label reads every fact the
  * visual layout shows, so screen readers get the full summary too.
  *
- * Long press copies the product's web URL to clipboard.
+ * Long press copies the product's web URL and opens the system share sheet.
  */
 export function ProductCard({ product, onPress }: ProductCardProps) {
   const { theme } = useTheme();
 
-  const copyProductUrl = () => {
+  const shareProductUrl = async () => {
     const url = `${env.webBaseUrl}/products/${product.slug}`;
+
+    // Copy first so the link stays on the clipboard if the share sheet is
+    // dismissed or the target app never receives it.
     void Clipboard.setStringAsync(url);
+
+    try {
+      // iOS shares `url` as a link; Android only reads `message` and shows
+      // `dialogTitle` above the chooser (WhatsApp, Messenger, etc.).
+      await Share.share(
+        Platform.OS === 'ios' ? { url } : { message: url, title: product.name },
+        Platform.OS === 'ios' ? { subject: product.name } : { dialogTitle: product.name },
+      );
+    } catch (error) {
+      // A failed/cancelled chooser is not an app error - the URL is already
+      // copied, so the long press still succeeded.
+      if (__DEV__) {
+        console.warn('[ProductCard] Unable to open the share sheet', error);
+      }
+    }
   };
 
   const primaryImage = getPrimaryImage(product.images);
@@ -53,9 +71,10 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
   return (
     <Pressable
       onPress={() => onPress(product.id)}
-      onLongPress={copyProductUrl}
+      onLongPress={() => void shareProductUrl()}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityHint="Long press to copy and share the product link"
       style={({ pressed }) => [
         styles.card,
         {

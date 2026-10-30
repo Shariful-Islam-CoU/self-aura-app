@@ -17,6 +17,7 @@
     },
     "android": {
       "package": "com.selfaura.management",
+      "googleServicesFile": "./google-services.json",
       "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -49,7 +50,15 @@
         }
       ],
       "expo-font",
-      "expo-video"
+      "expo-video",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#2563EB",
+          "defaultChannel": "general"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

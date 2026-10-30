@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "284408615703",
+    "project_id": "self-aura-fahima",
+    "storage_bucket": "self-aura-fahima.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:284408615703:android:a42f51f8a7b7bd8e5e5d52",
+        "android_client_info": {
+          "package_name": "com.selfaura.management"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA2rbgULq_8QzF0xiz25UROwKCbnKOaWyA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

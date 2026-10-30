@@ -26,6 +26,9 @@ export interface CustomerAddress {
   isDefault: boolean;
 }
 
+/** `CustomerAuthType` from `self_aura_backend/src/types/customer.ts`. */
+export type CustomerAuthType = 'none' | 'password' | 'google';
+
 /** `CustomerResponse` from `self_aura_backend/src/types/customer.ts`. */
 export interface Customer {
   id: string;
@@ -37,6 +40,11 @@ export interface Customer {
   notes?: string;
   tags: string[];
   isActive: boolean;
+  /** How the customer signs in to the storefront. */
+  authType: CustomerAuthType;
+  /** True while a staff-issued one-time password is pending replacement. */
+  mustChangePassword: boolean;
+  lastLoginAt?: string | null;
   facebookName?: string | null;
   facebookProfileUrl?: string | null;
   avatarUrl?: string | null;
@@ -106,6 +114,11 @@ export interface CreateCustomerInput {
   facebookName?: string | null;
   facebookProfileUrl?: string | null;
   avatarUrl?: string | null;
+  /**
+   * Optional storefront password. When set the customer can sign in with their
+   * phone + password; when omitted the record is CRM-only.
+   */
+  password?: string;
 }
 
 /**

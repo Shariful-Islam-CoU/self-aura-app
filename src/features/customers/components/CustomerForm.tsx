@@ -20,8 +20,9 @@ import type {
  * feedback - the backend re-validates everything and its response stays
  * authoritative: server field errors (`ApiError.errors`) are mapped back
  * onto the fields, anything else surfaces as a form-level message.
- * Passwords are never involved (customer records have no app-visible
- * credentials), and no customer data leaves this component except through
+ * Passwords are only collected when creating a storefront login (optional on
+ * create, never editable here); resetting one is a separate one-time action on
+ * the details screen. No customer data leaves this component except through
  * `onSubmit`.
  */
 
@@ -68,6 +69,8 @@ interface CustomerFormValues {
   phone: string;
   alternatePhone: string;
   email: string;
+  password: string;
+  confirmPassword: string;
   facebookName: string;
   facebookProfileUrl: string;
   tags: string;
@@ -80,6 +83,8 @@ interface FieldErrors {
   phone?: string;
   alternatePhone?: string;
   email?: string;
+  password?: string;
+  confirmPassword?: string;
   facebookName?: string;
   facebookProfileUrl?: string;
   tags?: string;
@@ -134,6 +139,8 @@ export function CustomerForm({
     phone: initialValues?.phone ?? '',
     alternatePhone: initialValues?.alternatePhone ?? '',
     email: initialValues?.email ?? '',
+    password: '',
+    confirmPassword: '',
     facebookName: initialValues?.facebookName ?? '',
     facebookProfileUrl: initialValues?.facebookProfileUrl ?? '',
     tags: initialValues?.tags.join(', ') ?? '',
@@ -250,6 +257,19 @@ export function CustomerForm({
       }
     }
 
+    // Optional storefront login on create. Both fields blank = CRM-only record.
+    if (!isEdit && (values.password || values.confirmPassword)) {
+      if (!values.password) {
+        errors.password = 'Enter a password or leave both password fields blank';
+      } else if (values.password.length < 8) {
+        errors.password = 'Password must be at least 8 characters';
+      } else if (values.password.length > 72) {
+        errors.password = 'Password must be at most 72 characters';
+      } else if (values.password !== values.confirmPassword) {
+        errors.confirmPassword = 'Passwords do not match';
+      }
+    }
+
     if (values.facebookName.trim().length > 120) {
       errors.facebookName = 'Facebook name must be at most 120 characters';
     }
@@ -320,6 +340,8 @@ export function CustomerForm({
       errors.phone ||
       errors.alternatePhone ||
       errors.email ||
+      errors.password ||
+      errors.confirmPassword ||
       errors.facebookName ||
       errors.facebookProfileUrl ||
       errors.tags ||
@@ -359,6 +381,10 @@ export function CustomerForm({
       tags: splitTags(values.tags),
     };
 
+    if (!isEdit && values.password) {
+      (payload as CreateCustomerInput).password = values.password;
+    }
+
     setFormError(null);
     try {
       await onSubmit(payload);
@@ -370,6 +396,7 @@ export function CustomerForm({
         if (serverErrors.phone) next.phone = serverErrors.phone[0];
         if (serverErrors.alternatePhone) next.alternatePhone = serverErrors.alternatePhone[0];
         if (serverErrors.email) next.email = serverErrors.email[0];
+        if (serverErrors.password) next.password = serverErrors.password[0];
         if (serverErrors.facebookName) next.facebookName = serverErrors.facebookName[0];
         if (serverErrors.facebookProfileUrl) {
           next.facebookProfileUrl = serverErrors.facebookProfileUrl[0];
@@ -455,6 +482,40 @@ export function CustomerForm({
         autoComplete="email"
         accessibilityLabel="Customer email address"
       />
+
+      {!isEdit ? (
+        <>
+          <Text variant="label" tone="secondary">
+            Storefront login (optional)
+          </Text>
+          <Text variant="caption" tone="muted">
+            Set a password so this customer can sign in to the website with their phone number.
+            Leave both fields blank to create a customer record without an online login.
+          </Text>
+          <Input
+            label="Password"
+            value={values.password}
+            onChangeText={(text) => updateField('password', text)}
+            error={fieldErrors.password}
+            placeholder="At least 8 characters"
+            secure
+            autoCapitalize="none"
+            autoComplete="new-password"
+            accessibilityLabel="Customer storefront password"
+          />
+          <Input
+            label="Confirm password"
+            value={values.confirmPassword}
+            onChangeText={(text) => updateField('confirmPassword', text)}
+            error={fieldErrors.confirmPassword}
+            placeholder="Repeat the password"
+            secure
+            autoCapitalize="none"
+            autoComplete="new-password"
+            accessibilityLabel="Confirm customer storefront password"
+          />
+        </>
+      ) : null}
 
       <Text variant="label" tone="secondary">
         Social information

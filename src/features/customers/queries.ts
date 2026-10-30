@@ -169,6 +169,23 @@ export function useDeactivateCustomer() {
   return useCustomerMutation<{ id: string }>(({ id }) => customerService.deactivate(id));
 }
 
+/**
+ * Staff-issued one-time password. Same cache behavior as the other customer
+ * mutations, but the mutation data also carries the one-time plaintext so the
+ * screen can reveal it exactly once.
+ */
+export function useResetCustomerPassword() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: string }) => customerService.resetPassword(id),
+    onSuccess: ({ customer }) => {
+      queryClient.setQueryData(customersKeys.detail(customer.id), customer);
+      void queryClient.invalidateQueries({ queryKey: customersKeys.all });
+      void queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+    },
+  });
+}
+
 /** Flattens the history pages, de-duplicating ids (refresh-safe). */
 export function flattenCustomerOrders(pages: { orders: Order[] }[] | undefined): Order[] {
   const seen = new Set<string>();

@@ -10,6 +10,7 @@ import {
 
 import { Providers } from '@/providers';
 import { RootNavigator } from '@/navigation';
+import { ensureAndroidChannels } from '@/services/pushNotifications';
 
 // Must run before the app renders so the native splash stays up until the
 // session restore (and first frame) is done - hiding happens in RootNavigator.
@@ -34,6 +35,10 @@ export default function RootLayout() {
       SplashScreen.hideAsync().catch(() => {});
     }
   }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    void ensureAndroidChannels();
+  }, []);
 
   if (!fontsLoaded) {
     return null; // Keep splash screen visible while fonts load

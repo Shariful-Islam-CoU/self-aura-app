@@ -3,6 +3,7 @@ import { Stack, SplashScreen } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { LoadingIndicator } from '@/components/feedback';
+import { useNotificationObserver } from '@/features/notifications/hooks/useNotificationObserver';
 import { useAuth, useTheme } from '@/providers';
 
 /**
@@ -21,6 +22,8 @@ import { useAuth, useTheme } from '@/providers';
 export function RootNavigator() {
   const { isLoading, isAuthenticated, isShellPreview } = useAuth();
   const { theme, resolvedMode } = useTheme();
+
+  useNotificationObserver();
 
   // Keep the native splash screen visible until the stored session has been
   // restored, so the first frame is always the correct route group.

@@ -97,6 +97,19 @@ class CustomerService {
   }
 
   /**
+   * Staff-issued one-time password. The plaintext exists only in this response,
+   * so the screen must show it immediately and never persist it.
+   */
+  async resetPassword(
+    id: string,
+  ): Promise<{ customer: Customer; temporaryPassword: string }> {
+    const res = await apiClient.post<
+      ApiEnvelope<{ customer: Customer; temporaryPassword: string }>
+    >(`${this.basePath}/${id}/password-reset`, {});
+    return res.data;
+  }
+
+  /**
    * Backend-computed customer statistics (GET /reports/customers). No dates
    * are sent, so the backend defaults the period to the current month -
    * the same call the web dashboard makes.

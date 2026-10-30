@@ -153,7 +153,13 @@ export default function OrderDetailsScreen() {
     );
   };
 
-  const header = <AppHeader variant="feature" title="Order details" onBack={() => router.back()} />;
+  const header = (
+    <AppHeader
+      variant="feature"
+      title="Order details"
+      onBack={() => router.replace('/orders')}
+    />
+  );
 
   if (!orderId) {
     return (

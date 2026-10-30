@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
+import * as Clipboard from 'expo-clipboard';
 
 import { getErrorMessage, isApiError } from '@/api';
 import { EmptyState, ErrorState } from '@/components/feedback';
 import { AppHeader, Screen } from '@/components/layout';
-import { Button, Dialog } from '@/components/ui';
+import { Button, Dialog, Text } from '@/components/ui';
 import {
   CustomerAddressSection,
   CustomerContactSection,
@@ -21,9 +22,10 @@ import {
   customerOrdersKey,
   useCustomerDetails,
   useDeactivateCustomer,
+  useResetCustomerPassword,
 } from '@/features/customers/queries';
 import { usePermissions } from '@/hooks/usePermissions';
-import { useToast } from '@/providers';
+import { useTheme, useToast } from '@/providers';
 import { spacing } from '@/theme';
 
 /**
@@ -39,6 +41,7 @@ export default function CustomerDetailsScreen() {
   const { customerId } = useLocalSearchParams<{ customerId: string }>();
   const { hasPermission } = usePermissions();
   const toast = useToast();
+  const { theme } = useTheme();
   const queryClient = useQueryClient();
 
   const canView = hasPermission('customers.view');
@@ -48,12 +51,16 @@ export default function CustomerDetailsScreen() {
 
   const customerQuery = useCustomerDetails(canView ? customerId : undefined);
   const deactivate = useDeactivateCustomer();
+  const resetPassword = useResetCustomerPassword();
 
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
+  const [passwordCopied, setPasswordCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const customer = customerQuery.data;
-  const isBusy = deactivate.isPending;
+  const isBusy = deactivate.isPending || resetPassword.isPending;
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -85,6 +92,34 @@ export default function CustomerDetailsScreen() {
         },
       },
     );
+  };
+
+  const handleResetPassword = () => {
+    if (!customer || isBusy) return;
+    resetPassword.mutate(
+      { id: customer.id },
+      {
+        onSuccess: (data) => {
+          setTemporaryPassword(data.temporaryPassword);
+          setPasswordCopied(false);
+          setResetDialogOpen(true);
+        },
+        onError: (error) => toast.error(getErrorMessage(error)),
+      },
+    );
+  };
+
+  const closeResetDialog = () => {
+    setResetDialogOpen(false);
+    // The plaintext exists only in this dialog; drop it from memory.
+    setTemporaryPassword(null);
+    setPasswordCopied(false);
+  };
+
+  const copyTemporaryPassword = async () => {
+    if (!temporaryPassword) return;
+    await Clipboard.setStringAsync(temporaryPassword);
+    setPasswordCopied(true);
   };
 
   const header = (
@@ -204,6 +239,24 @@ export default function CustomerDetailsScreen() {
                 accessibilityLabel="Edit this customer's information"
               />
             ) : null}
+            {canEdit ? (
+              customer.authType === 'google' ? (
+                <Text variant="caption" tone="muted">
+                  This customer signs in with Google. Google accounts cannot use a password.
+                </Text>
+              ) : (
+                <Button
+                  title="Reset storefront password"
+                  variant="outline"
+                  icon="key-outline"
+                  fullWidth
+                  loading={resetPassword.isPending}
+                  disabled={isBusy}
+                  onPress={handleResetPassword}
+                  accessibilityLabel="Issue a one-time storefront password for this customer"
+                />
+              )
+            ) : null}
             {canDelete && customer.isActive ? (
               <Button
                 title="Deactivate customer"
@@ -234,10 +287,41 @@ export default function CustomerDetailsScreen() {
         }}
         secondaryAction={{ label: 'Keep customer' }}
       />
+
+      <Dialog
+        visible={resetDialogOpen}
+        onClose={closeResetDialog}
+        title="One-time password"
+        message={`Share this with ${customer.name} over a trusted channel. It is shown only once, and they must change it when they sign in.`}
+        dismissOnBackdrop={false}
+        primaryAction={{ label: 'Done', onPress: closeResetDialog }}
+        secondaryAction={{
+          label: passwordCopied ? 'Copied' : 'Copy',
+          onPress: () => void copyTemporaryPassword(),
+        }}
+      >
+        <View
+          style={[
+            styles.passwordBox,
+            { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceMuted },
+          ]}
+        >
+          <Text variant="h2" selectable>
+            {temporaryPassword ?? ''}
+          </Text>
+        </View>
+      </Dialog>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { gap: spacing.lg },
+  passwordBox: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+  },
 });

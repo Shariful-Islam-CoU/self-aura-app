@@ -9,28 +9,15 @@ import {
 import { dashboardKeys } from '@/features/dashboard/queries';
 import { productsKeys } from '@/features/products/queries';
 import type { ProductListFilters } from '@/features/products/types';
+import { inventoryKeys } from './keys';
 import { inventoryService } from './services/inventoryService';
 import type { AddStockInput, AdjustStockInput, RemoveStockInput, StockChangeResult } from './types';
 
+/** Re-exported so the feature keeps one query/hook entry point. */
+export { inventoryKeys };
+
 /** Backend caps `limit` at 100; 20 matches the backend default page size. */
 export const INVENTORY_PAGE_SIZE = 20;
-
-/**
- * Query keys. Everything inventory-related lives under 'inventory' so a
- * mutation can invalidate the whole group with a prefix match. The list key
- * carries the state that changes its response (filters/search) for automatic
- * dedupe. The inventory DETAIL is the product itself: it lives under
- * `productsKeys.detail` and is never duplicated here - stock mutations patch
- * that cache from the backend's response and invalidate the product group.
- */
-export const inventoryKeys = {
-  all: ['inventory'] as const,
-  list: (filters: ProductListFilters, search: string) =>
-    ['inventory', 'list', search, filters] as const,
-  lowStock: () => ['inventory', 'low-stock'] as const,
-  totals: () => ['inventory', 'totals'] as const,
-  history: (productId: string) => ['inventory', 'history', productId] as const,
-};
 
 /**
  * Paginated inventory list - the shared `GET /products` endpoint (web

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 
@@ -10,6 +11,7 @@ import {
   PAYMENT_STATUS_LABELS,
   PAYMENT_STATUS_TONES,
 } from '@/features/orders/labels';
+import { OrderContactSheet } from '@/features/orders/components/OrderContactSheet';
 import type { Order } from '@/features/orders/types';
 import { useTheme } from '@/providers';
 import { radius, spacing } from '@/theme';
@@ -38,6 +40,8 @@ export function CustomerOrderHistory({
   const orders = flattenCustomerOrders(historyQuery.data?.pages);
   const totalOrders = historyQuery.data?.pages[0]?.pagination.total;
   const newestOrder = orders[0];
+  const [contactOrder, setContactOrder] = useState<Order | null>(null);
+  const [contactOpen, setContactOpen] = useState(false);
 
   if (!canViewOrders) {
     return (
@@ -109,7 +113,14 @@ export function CustomerOrderHistory({
         ) : (
           <View style={styles.list}>
             {orders.map((order) => (
-              <CustomerOrderRow key={order.id} order={order} />
+              <CustomerOrderRow
+                key={order.id}
+                order={order}
+                onLongPress={(selected) => {
+                  setContactOrder(selected);
+                  setContactOpen(true);
+                }}
+              />
             ))}
             {historyQuery.hasNextPage ? (
               <Button
@@ -129,12 +140,24 @@ export function CustomerOrderHistory({
           </View>
         )}
       </SectionCard>
+
+      <OrderContactSheet
+        order={contactOrder}
+        visible={contactOpen}
+        onClose={() => setContactOpen(false)}
+      />
     </View>
   );
 }
 
 /** Compact order row: number + total, date, status/payment badges. */
-function CustomerOrderRow({ order }: { order: Order }) {
+function CustomerOrderRow({
+  order,
+  onLongPress,
+}: {
+  order: Order;
+  onLongPress: (order: Order) => void;
+}) {
   const { theme } = useTheme();
 
   const label = [
@@ -148,8 +171,10 @@ function CustomerOrderRow({ order }: { order: Order }) {
   return (
     <Pressable
       onPress={() => router.push(`/orders/${order.id}`)}
+      onLongPress={() => onLongPress(order)}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityHint="Long press to view and copy customer contact details"
       style={({ pressed }) => [
         styles.row,
         {

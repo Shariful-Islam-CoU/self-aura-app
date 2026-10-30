@@ -2,6 +2,10 @@ import { Stack } from 'expo-router';
 
 import { useTheme } from '@/providers';
 
+export const unstable_settings = {
+  anchor: 'index',
+};
+
 /**
  * Orders feature stack (list -> detail -> create form).
  *

@@ -8,6 +8,7 @@ import { AppHeader, Screen } from '@/components/layout';
 import { Button, IconButton, SearchInput, Select, type SelectOption } from '@/components/ui';
 import {
   OrderCard,
+  OrderContactSheet,
   OrderFiltersSheet,
   OrderListSkeleton,
   type OrderFilterValues,
@@ -53,6 +54,8 @@ export default function OrdersListScreen() {
   }>({ sortBy: 'createdAt', sortOrder: 'desc' });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [contactOrder, setContactOrder] = useState<Order | null>(null);
+  const [contactOpen, setContactOpen] = useState(false);
 
   const search = debouncedSearch.trim();
   const filters: OrderListFilters = useMemo(
@@ -172,7 +175,14 @@ export default function OrdersListScreen() {
         data={orders}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <OrderCard order={item} onPress={(id) => router.push(`/orders/${id}`)} />
+          <OrderCard
+            order={item}
+            onPress={(id) => router.push(`/orders/${id}`)}
+            onLongPress={(order) => {
+              setContactOrder(order);
+              setContactOpen(true);
+            }}
+          />
         )}
         contentContainerStyle={styles.listContent}
         keyboardShouldPersistTaps="handled"
@@ -253,6 +263,12 @@ export default function OrdersListScreen() {
         value={draftFilters}
         onValueChange={setDraftFilters}
         onApply={applyFilters}
+      />
+
+      <OrderContactSheet
+        order={contactOrder}
+        visible={contactOpen}
+        onClose={() => setContactOpen(false)}
       />
     </Screen>
   );

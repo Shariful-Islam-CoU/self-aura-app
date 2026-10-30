@@ -1,4 +1,9 @@
 export { OrderCard, type OrderCardProps } from './OrderCard';
+export {
+  OrderContactSheet,
+  formatOrderAddress,
+  type OrderContactSheetProps,
+} from './OrderContactSheet';
 export { OrderListSkeleton } from './OrderListSkeleton';
 export { OrderDetailsSkeleton } from './OrderDetailsSkeleton';
 export { OrderFiltersSheet, type OrderFilterValues } from './OrderFiltersSheet';

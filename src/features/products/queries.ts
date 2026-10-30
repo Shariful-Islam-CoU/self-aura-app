@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { dashboardKeys } from '@/features/dashboard/queries';
+import { inventoryKeys } from '@/features/inventory/keys';
 import { productService } from './services/productService';
 import type {
   CreateProductInput,
@@ -74,7 +75,8 @@ export function useProductDetails(productId: string | undefined) {
  * Create/update/deactivate share one behavior: the server returns the
  * updated product, so the detail cache is set from that authoritative
  * response immediately (no optimistic guessing), then the whole product
- * group and the dashboard (low-stock section) are invalidated so every
+ * group, the dashboard (low-stock section) and the inventory group
+ * (catalogue totals shown on the products list) are invalidated so every
  * screen converges on the same state. Failures surface through `error` -
  * never faked.
  */
@@ -86,6 +88,7 @@ function useProductMutation<TVars>(mutationFn: (vars: TVars) => Promise<Product>
       queryClient.setQueryData(productsKeys.detail(product.id), product);
       void queryClient.invalidateQueries({ queryKey: productsKeys.all });
       void queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+      void queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
     },
   });
 }

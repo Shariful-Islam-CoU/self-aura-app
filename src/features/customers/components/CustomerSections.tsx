@@ -29,6 +29,33 @@ export function CustomerOverviewSection({ customer }: { customer: Customer }) {
           tone={customerStatusTone(customer.isActive)}
         />
       </DetailRow>
+      <DetailRow label="Sign-in">
+        <Badge
+          label={
+            customer.authType === 'google'
+              ? 'Google'
+              : customer.authType === 'password'
+                ? 'Phone / email + password'
+                : 'No online login'
+          }
+          tone={
+            customer.authType === 'google'
+              ? 'info'
+              : customer.authType === 'password'
+                ? 'success'
+                : 'neutral'
+          }
+        />
+      </DetailRow>
+      {customer.mustChangePassword ? (
+        <DetailRow label="Password">
+          <Badge label="Must change" tone="warning" />
+        </DetailRow>
+      ) : null}
+      <DetailRow
+        label="Last sign-in"
+        value={customer.lastLoginAt ? formatDateTime(customer.lastLoginAt) : 'Never'}
+      />
       <DetailRow label="Last updated" value={formatDateTime(customer.updatedAt)} />
     </SectionCard>
   );

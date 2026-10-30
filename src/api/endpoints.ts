@@ -17,6 +17,17 @@ export const API_ENDPOINTS = {
     root: '/health',
     ready: '/health/ready',
   },
+  notifications: {
+    inbox: '/notifications',
+    unreadCount: '/notifications/unread-count',
+    markRead: (id: string) => `/notifications/${id}/read`,
+    markAllRead: '/notifications/read-all',
+    deviceTokens: '/notifications/device-tokens',
+    registerDeviceToken: '/notifications/device-tokens',
+    unregisterDeviceToken: (token: string) =>
+      `/notifications/device-tokens/${token}`,
+    test: '/notifications/test',
+  },
 } as const;
 
 export type ApiEndpoint = string;

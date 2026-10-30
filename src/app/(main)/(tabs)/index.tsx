@@ -4,8 +4,8 @@ import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { AppHeader, Screen } from '@/components/layout';
-import { IconButton } from '@/components/ui';
 import { ErrorState } from '@/components/feedback';
+import { NotificationBell } from '@/features/notifications/components/NotificationBell';
 import { dashboardModule } from '@/navigation';
 import { useAuth } from '@/providers';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -77,13 +77,7 @@ export default function HomeScreen() {
       title="Self Aura"
       subtitle={user?.name ? `Hello, ${user.name}` : 'Management'}
       logo={logo}
-      actions={
-        <IconButton
-          icon="notifications-outline"
-          accessibilityLabel="Notifications"
-          onPress={() => router.push('/notifications')}
-        />
-      }
+      actions={<NotificationBell />}
     />
   );
 

@@ -46,10 +46,10 @@ export function KpiGrid({ data }: { data: DashboardData }) {
       tone: 'success',
     },
     {
-      key: 'customers',
-      label: 'Customers',
-      value: formatNumber(data.customers.totalCustomers),
-      icon: 'people-outline',
+      key: 'inventory',
+      label: 'Inventory (cost)',
+      value: formatCurrency(data.inventory.costValue),
+      icon: 'cube-outline',
       tone: 'info',
     },
   ];
