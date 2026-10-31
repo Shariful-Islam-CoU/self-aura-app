@@ -20,8 +20,8 @@ const asRecord = (value: unknown): Record<string, unknown> | null =>
  * - A tap (cold start, background, or foreground) marks the persisted event
  *   read, refreshes the badge and routes to the domain screen.
  *
- * It waits for a real authenticated session and a ready root navigator, so a
- * push that launches the app can still be applied after login/session restore.
+ * It waits for a real authenticated session, so a push that launches the app
+ * can still be applied after login/session restore.
  */
 export function useNotificationObserver() {
   const { isAuthenticated } = useAuth();

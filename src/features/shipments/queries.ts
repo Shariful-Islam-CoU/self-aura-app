@@ -3,6 +3,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { dashboardKeys } from '@/features/dashboard/queries';
 import { shipmentService } from './services/shipmentService';
 import type {
+  CreateShipmentData,
   Shipment,
   ShipmentListParams,
   UpdateShipmentData,
@@ -71,7 +72,7 @@ function useShipmentMutation<TVars>(mutationFn: (vars: TVars) => Promise<Shipmen
 }
 
 export function useCreateShipment() {
-  return useShipmentMutation(shipmentService.create);
+  return useShipmentMutation((input: CreateShipmentData) => shipmentService.create(input));
 }
 
 export function useUpdateShipment(id: string) {
