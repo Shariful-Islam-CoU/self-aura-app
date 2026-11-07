@@ -54,18 +54,40 @@ export default function HomeScreen() {
   const canViewInventory = hasPermission('inventory.view');
 
   const range = useMemo(() => DashboardService.buildDateRange(preset), [preset]);
+  // The chart plots a longer window than the KPIs: a single day is not a trend.
+  const trendRange = useMemo(() => DashboardService.buildTrendRange(preset), [preset]);
 
   const summary = useDashboardSummary(range);
-  const trend = useSalesTrend(range, range.groupBy || 'day', canViewDashboard && canViewSales);
+  const trend = useSalesTrend(
+    trendRange,
+    trendRange.groupBy || 'day',
+    canViewDashboard && canViewSales,
+  );
   const recentOrders = useRecentOrders(5, canViewDashboard && canViewOrders);
   const lowStock = useLowStockProducts(canViewDashboard && canViewInventory);
 
+  /**
+   * Pull-to-refresh must show fresh numbers, so every visible section is
+   * refetched explicitly. `refetch()` bypasses `staleTime` (invalidation alone
+   * only marks data stale - it resolves before the quotes finish, which made the
+   * spinner stop while old numbers were still on screen).
+   *
+   * Only queries that actually exist are awaited: the three sections below are
+   * permission-gated, and awaiting a disabled query's refetch would fudge the
+   * timing without fetching anything.
+   */
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      // Prefix invalidation: refetches summary/trend/orders/low-stock together
-      // so the dashboard never shows a mix of old and new data.
-      await queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+      await Promise.all([
+        summary.refetch(),
+        canViewSales ? trend.refetch() : Promise.resolve(),
+        canViewOrders ? recentOrders.refetch() : Promise.resolve(),
+        canViewInventory ? lowStock.refetch() : Promise.resolve(),
+      ]);
+      // Unmounted dashboard entries (a different period chip) are marked stale
+      // too, so switching back to one does not show pre-refresh numbers.
+      void queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     } finally {
       setRefreshing(false);
     }

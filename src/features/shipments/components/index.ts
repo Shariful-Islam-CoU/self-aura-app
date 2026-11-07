@@ -10,4 +10,5 @@ export {
   ShipmentHistorySection,
 } from './ShipmentSections';
 export { ShipmentActionsSection } from './ShipmentActionsSection';
+export { ShipmentBookingSection } from './ShipmentBookingSection';
 export { ShipmentForm, type ShipmentFormProps } from './ShipmentForm';

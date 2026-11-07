@@ -2,7 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { getErrorMessage } from '@/api';
-import { Button, Input, SearchInput, Select, Text, type SelectOption } from '@/components/ui';
+import {
+  Button,
+  Input,
+  SearchInput,
+  Select,
+  Switch,
+  Text,
+  type SelectOption,
+} from '@/components/ui';
 import { SectionCard } from '@/features/customers/components/SectionCard';
 import { courierService } from '@/features/couriers/services/courierService';
 import type { Courier } from '@/features/couriers/types';
@@ -44,7 +52,9 @@ interface ShipmentFormErrors {
  * - Courier: the real active-courier list response. Inactive couriers are
  *   rejected by the backend, so only active ones are offered (plus the
  *   currently linked one on edit, so the form never opens blank).
- * - Tracking number is user-provided only - nothing is ever generated.
+ * - Tracking number is user-provided only for a manual courier; a provider
+ *   courier fills it in when the parcel is booked (the create form offers a
+ *   switch for whether to book now, since booking is a real parcel).
  * - Delivery charge is optional on create (the server falls back to the
  *   order's charge); on edit only changed fields are sent.
  */
@@ -68,6 +78,7 @@ export function ShipmentForm({
     mode === 'edit' && shipment ? String(shipment.deliveryCharge) : '',
   );
   const [note, setNote] = useState(mode === 'edit' && shipment ? (shipment.note ?? '') : '');
+  const [bookParcel, setBookParcel] = useState(true);
 
   const [couriers, setCouriers] = useState<Courier[]>([]);
   const [couriersLoading, setCouriersLoading] = useState(true);
@@ -170,6 +181,15 @@ export function ShipmentForm({
     [orders, selectedOrderId],
   );
 
+  const selectedCourier = useMemo(
+    () => couriers.find((courier) => courier.id === courierId) ?? null,
+    [couriers, courierId],
+  );
+
+  // A provider courier books a real parcel on create; a manual one never does.
+  const isProviderCourier = selectedCourier?.provider === 'steadfast';
+  const providerHasKeys = selectedCourier?.hasCredentials !== false;
+
   const courierOptions: SelectOption[] = useMemo(
     () => couriers.map((courier) => ({ value: courier.id, label: courier.name })),
     [couriers],
@@ -238,6 +258,7 @@ export function ShipmentForm({
         trackingNumber: tracking || undefined,
         deliveryCharge: chargeText ? Number(chargeText) : undefined,
         note: noteText || undefined,
+        ...(isProviderCourier ? { bookParcel } : {}),
       };
     } else {
       // Update schema requires at least one field - send only what changed.
@@ -360,6 +381,26 @@ export function ShipmentForm({
           error={errors.courier}
           disabled={isSubmitting || couriersLoading}
         />
+        {isProviderCourier && mode === 'create' ? (
+          <View style={styles.bookingBox}>
+            <Switch
+              label="Book the parcel with the courier now"
+              value={bookParcel}
+              onValueChange={setBookParcel}
+              disabled={isSubmitting}
+            />
+            <Text variant="caption" tone="muted">
+              The courier has no test mode: booking creates a real parcel and pickup. Tracking
+              number and link come back from the courier. Turn this off to create the shipment
+              only and book it later.
+            </Text>
+            {!providerHasKeys ? (
+              <Text variant="caption" tone="danger">
+                This courier has no API keys configured, so booking will fail until they are set.
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
         <Input
           label="Tracking number"
           maxLength={100}
@@ -371,7 +412,11 @@ export function ShipmentForm({
           error={errors.trackingNumber}
           placeholder="Optional, entered manually"
           editable={!isSubmitting}
-          helperText="Tracking numbers are never generated - the server stores exactly what you enter."
+          helperText={
+            isProviderCourier
+              ? 'Leave blank - the courier fills this in when the parcel is booked.'
+              : 'Tracking numbers are never generated - the server stores exactly what you enter.'
+          }
         />
         <Input
           label="Delivery charge"
@@ -415,6 +460,7 @@ export function ShipmentForm({
 const styles = StyleSheet.create({
   container: { gap: spacing.lg },
   selectedBox: { gap: spacing.xs },
+  bookingBox: { gap: spacing.xs },
   actions: { flexDirection: 'row', gap: spacing.md },
   action: { flex: 1 },
 });

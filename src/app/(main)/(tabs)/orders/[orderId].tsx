@@ -30,6 +30,7 @@ import { ORDER_TRANSITIONS } from '@/features/orders/types';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useToast } from '@/providers';
 import { spacing } from '@/theme';
+import { formatCurrency } from '@/utils/format';
 
 /**
  * Order details: fetched by ID only (navigation passes `orderId` - never an
@@ -47,6 +48,7 @@ export default function OrderDetailsScreen() {
   const canView = hasPermission('orders.view');
   const canEdit = hasPermission('orders.edit');
   const canCancel = hasPermission('orders.cancel');
+  const canCreatePayment = hasPermission('payments.create');
   const canOverrideCharge = hasPermission('orders.overrideDeliveryCharge');
 
   const orderQuery = useOrderDetails(canView ? orderId : undefined);
@@ -57,6 +59,7 @@ export default function OrderDetailsScreen() {
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [paymentPromptOpen, setPaymentPromptOpen] = useState(false);
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
   const [overrideCharge, setOverrideCharge] = useState('');
   const [overrideReason, setOverrideReason] = useState('');
@@ -76,6 +79,14 @@ export default function OrderDetailsScreen() {
     }
   };
 
+  /** Amount the payment form should prefill: what is still owed, else the total. */
+  const pendingAmount = (() => {
+    if (!order) return 0;
+    const outstanding = summaryQuery.data?.outstandingAmount;
+    const value = typeof outstanding === 'number' ? outstanding : order.total;
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  })();
+
   const handleAdvance = () => {
     if (!order || !nextStatus || isBusy) return;
     const targetLabel = ORDER_STATUS_LABELS[nextStatus];
@@ -85,6 +96,18 @@ export default function OrderDetailsScreen() {
         onSuccess: () => {
           setStatusDialogOpen(false);
           toast.success(`Order marked as ${targetLabel}.`);
+          /**
+           * Delivery is when cash is collected, so offer to record the payment
+           * straight away. The prompt is its own dialog (not a re-use of the
+           * transition dialog): closing one must never unmount the screen or
+           * reset the state underneath it.
+           *
+           * Opened only when there is money left to collect - a fully paid order
+           * (or a cancelled one) has nothing to record.
+           */
+          if (nextStatus === 'delivered' && canCreatePayment && pendingAmount > 0) {
+            setPaymentPromptOpen(true);
+          }
         },
         onError: (error) => {
           // Backend rejected the transition (stale state / permission):
@@ -95,6 +118,14 @@ export default function OrderDetailsScreen() {
         },
       },
     );
+  };
+
+  const handleAddPayment = () => {
+    if (!order) return;
+    setPaymentPromptOpen(false);
+    // push (not replace): the order detail stays in the orders stack, so Back
+    // from the payments screen never re-enters it.
+    router.push(`/payments/new?orderId=${order.id}&amount=${pendingAmount}`);
   };
 
   const handleCancel = () => {
@@ -305,6 +336,22 @@ export default function OrderDetailsScreen() {
           onPress: handleCancel,
         }}
         secondaryAction={{ label: 'Keep order' }}
+      />
+
+      {/* Post-delivery prompt. Deliberately separate from the transition dialog
+          so dismissing this one leaves the order detail mounted and intact. */}
+      <Dialog
+        visible={paymentPromptOpen}
+        onClose={() => setPaymentPromptOpen(false)}
+        title="Add Payment?"
+        message={`Order ${order.orderNumber} is delivered. Record a payment of ${formatCurrency(
+          pendingAmount,
+        )} for it now?`}
+        primaryAction={{
+          label: 'Yes',
+          onPress: handleAddPayment,
+        }}
+        secondaryAction={{ label: 'Not now' }}
       />
 
       <Dialog

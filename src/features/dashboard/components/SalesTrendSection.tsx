@@ -127,13 +127,67 @@ export function SalesTrendSection({
     },
   };
 
+  /**
+   * Y-axis tick label: compact BDT with Latin (English) digits.
+   *
+   * The axis always uses a K/M/B magnitude rather than raw taka, so every tick
+   * reads on the same scale instead of mixing "৳320" with "৳45.6K". Values from
+   * 100 up switch to K (320 -> `৳0.3K`); only genuinely tiny ticks stay plain so
+   * they never collapse to a misleading "৳0.0K".
+   *
+   * Bengali digits are intentionally not used here: currency elsewhere matches
+   * the web client, but an axis is a measuring scale scanned at a glance, and
+   * 10px Bengali numerals are hard to read. The ৳ stays so the scale says what
+   * it measures.
+   */
+  const formatAxisValue = (value: number): string => {
+    const abs = Math.abs(value);
+    const unit =
+      abs >= 1e9
+        ? { div: 1e9, suffix: 'B' }
+        : abs >= 1e6
+          ? { div: 1e6, suffix: 'M' }
+          : abs >= 100
+            ? { div: 1e3, suffix: 'K' }
+            : null;
+
+    if (!unit) return `৳${Math.round(value)}`;
+
+    // One decimal, keeping the scale consistent ("45.0K", not "45K" next to
+    // "1.2M") so tick labels stay aligned and comparable.
+    return `৳${(value / unit.div).toFixed(1)}${unit.suffix}`;
+  };
+
+  /**
+   * Y-axis ticks.
+   *
+   * chart-kit scales the grid to the data's maximum on its own, but its labels
+   * were switched off entirely, so the line had no readable magnitude. The tick
+   * count is derived from the plot height (~1 per 40px).
+   */
+  const CHART_HEIGHT = 200;
+  const tickCount = Math.max(3, Math.min(5, Math.round(CHART_HEIGHT / 40)));
+
+  /**
+   * Left inset for the plot area, sized to the longest tick label.
+   *
+   * chart-kit treats `paddingRight` in the chart `style` as the plot's LEFT
+   * inset, so this is the only thing standing between the Y labels and the
+   * line. It is computed rather than fixed: a small range ("৳500") needs far
+   * less gutter than "৳1.2M", and a hardcoded value left an empty gap on small
+   * amounts. The tallest tick is the top of the scale (the data maximum), so
+   * that one label decides the width.
+   */
+  const maxNetSales = Math.max(...series.map((row) => row.netSales), 0);
+  const leftInset = Math.round(formatAxisValue(maxNetSales).length * 6 + 8);
+
   return (
     <View>
       <SectionHeader title="Sales trend" />
       <Card accessibilityLabel={`Sales trend, total ${formatCurrencyCompact(total)}`}>
         <Text variant="subtitle">{formatCurrencyCompact(total)}</Text>
         <Text variant="caption" tone="muted">
-          Net sales, last {series.length}{' '}
+          Net sales over {series.length}{' '}
           {data.dateGrouping === 'day' ? 'days' : data.dateGrouping + 's'}
         </Text>
         <View style={styles.chartContainer}>
@@ -146,12 +200,18 @@ export function SalesTrendSection({
             <LineChart
               data={chartData}
               width={chartWidth}
-              height={200}
-              chartConfig={chartConfig}
+              height={CHART_HEIGHT}
+              chartConfig={{ ...chartConfig, propsForLabels: { fontSize: 10 } }}
               bezier
-              style={styles.chart}
+              style={{ ...styles.chart, paddingRight: leftInset }}
               verticalLabelRotation={30}
-              withHorizontalLabels={false}
+              withHorizontalLabels
+              fromZero
+              segments={tickCount}
+              yAxisLabel=""
+              yAxisSuffix=""
+              yLabelsOffset={2}
+              formatYLabel={(value) => formatAxisValue(Number(value))}
             />
           </ScrollView>
         </View>
@@ -163,20 +223,19 @@ export function SalesTrendSection({
 const styles = StyleSheet.create({
   chartContainer: {
     marginTop: spacing.sm,
-    paddingHorizontal: 0, // Remove left padding
   },
   scrollView: {
     // Allow horizontal scrolling
   },
   scrollContent: {
-    paddingLeft: spacing.xs, // Card already pads - avoid doubling the left inset
-    paddingRight: spacing.lg, // Add right padding for last label
+    // No left padding: the card already pads, and the chart's own left inset
+    // (computed in the component) is all the room the Y labels need.
+    marginLeft: -10,
+    paddingRight: spacing.lg, // Right padding for the last X label
   },
   chart: {
     borderRadius: radius.md,
-    // chart-kit's legacy geometry treats `paddingRight` as the LEFT inset of
-    // the plot area (default 64px). Keep it small so the line hugs the left
-    // edge instead of leaving a wide empty gutter.
-    paddingRight: 8,
+    // `paddingRight` is set inline from the measured tick-label width - see
+    // `leftInset` in the component.
   },
 });

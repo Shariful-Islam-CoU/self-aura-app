@@ -88,3 +88,11 @@ export function useUpdateShipmentStatus(id: string) {
 export function useCancelShipment(id: string) {
   return useShipmentMutation(() => shipmentService.cancel(id));
 }
+
+export function useBookShipment(id: string) {
+  return useShipmentMutation(() => shipmentService.book(id));
+}
+
+export function useSyncShipment(id: string) {
+  return useShipmentMutation(() => shipmentService.sync(id));
+}

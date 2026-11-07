@@ -1,3 +1,5 @@
+export type CourierProvider = 'manual' | 'steadfast';
+
 export interface Courier {
   id: string;
   name: string;
@@ -6,6 +8,10 @@ export interface Courier {
   contactPerson?: string;
   address?: string;
   notes?: string;
+  provider?: CourierProvider;
+  /** Effective credentials: true when stored keys decrypt or env keys exist. */
+  hasCredentials?: boolean;
+  credentialsSource?: 'courier' | 'environment';
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -34,6 +40,7 @@ export interface CourierListParams {
 
 export interface CreateCourierData {
   name: string;
+  provider?: CourierProvider;
   phone?: string;
   website?: string;
   contactPerson?: string;

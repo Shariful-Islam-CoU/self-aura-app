@@ -50,6 +50,14 @@ export interface PaymentFormProps {
   mode: 'create' | 'edit';
   /** Preloaded payment for edit - the screen only mounts the form once loaded. */
   initialValues?: Payment | null;
+  /**
+   * Prefill for the create flow, used when the form is opened from an order
+   * (post-delivery "Add Payment?"). Both are read once, on mount: the form owns
+   * its state afterwards, so later re-renders never overwrite what staff typed.
+   */
+  initialOrderId?: string;
+  initialOrderLabel?: string;
+  initialAmount?: number | null;
   isSubmitting: boolean;
   onSubmit: (input: CreatePaymentInput | UpdatePaymentInput) => Promise<void>;
   onCancel: () => void;
@@ -77,6 +85,9 @@ function todayIso(): string {
 export function PaymentForm({
   mode,
   initialValues,
+  initialOrderId,
+  initialOrderLabel,
+  initialAmount,
   isSubmitting,
   onSubmit,
   onCancel,
@@ -85,9 +96,14 @@ export function PaymentForm({
   const isCreate = mode === 'create';
 
   const [values, setValues] = useState<PaymentFormValues>(() => ({
-    order: initialValues?.order.id ?? '',
-    orderLabel: initialValues?.order.orderNumber ?? initialValues?.order.id ?? '',
-    amount: initialValues ? String(initialValues.amount) : '',
+    order: initialValues?.order.id ?? initialOrderId ?? '',
+    orderLabel:
+      initialValues?.order.orderNumber ?? initialOrderLabel ?? initialOrderId ?? '',
+    amount: initialValues
+      ? String(initialValues.amount)
+      : typeof initialAmount === 'number' && initialAmount > 0
+        ? String(initialAmount)
+        : '',
     paymentMethod: initialValues?.paymentMethod ?? 'cash',
     paymentDate: initialValues?.paymentDate.split('T')[0] ?? todayIso(),
     reference: initialValues?.reference ?? '',

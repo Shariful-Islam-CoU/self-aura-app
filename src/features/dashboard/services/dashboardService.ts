@@ -35,20 +35,47 @@ interface LowStockApiItem {
   lowStockThreshold: number;
 }
 
+/** Local `YYYY-MM-DD`. Never `toISOString()` - see `buildDateRange`. */
+const formatLocalDate = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate(),
+  ).padStart(2, '0')}`;
+
+/** Midnight today in the device's own timezone. */
+const localToday = (): Date => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+};
+
+const daysAgo = (days: number): Date => {
+  const d = localToday();
+  d.setDate(d.getDate() - days);
+  return d;
+};
+
 export class DashboardService {
   private readonly basePath = '/reports';
 
   static buildDateRange(preset: DateRangePreset): { startDate?: string; endDate?: string; groupBy?: 'day' | 'week' | 'month' } {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const format = (d: Date) => d.toISOString().split('T')[0];
+    const today = localToday();
+    /**
+     * Local `YYYY-MM-DD`.
+     *
+     * NOT `toISOString()`: that converts local midnight to UTC, which for
+     * UTC+6 (Bangladesh) lands on the previous day. The backend parses the value
+     * as UTC midnight and expands it to whole UTC days, so a shifted date asked
+     * for the wrong window and today's numbers could silently be missing - no
+     * amount of refreshing fixes that, the request itself was asking the wrong
+     * question.
+     */
+    const format = formatLocalDate;
 
     switch (preset) {
       case 'today':
-        // Default to last 7 days for better trend visualization
-        const s = new Date(today);
-        s.setDate(s.getDate() - 6);
-        return { startDate: format(s), endDate: format(today), groupBy: 'day' };
+        // KPIs: today only. This used to share the 7-day window below, which
+        // made the "Today" and "7 days" chips identical - same request, same
+        // query key, same numbers, so switching between them did nothing.
+        return { startDate: format(today), endDate: format(today), groupBy: 'day' };
       case 'yesterday': {
         const y = new Date(today);
         y.setDate(y.getDate() - 1);
@@ -75,6 +102,56 @@ export class DashboardService {
       }
       case 'custom':
       default:
+        return { groupBy: 'day' };
+    }
+  }
+
+  /**
+   * Window the **sales trend chart** plots.
+   *
+   * Deliberately not the KPI window: a single day is one point, which is not a
+   * trend. "Today" and "7 days" both plot the last 7 days; anything longer plots
+   * its own window. The KPI cards above still show exactly the selected period,
+   * so the chart and the numbers answer different questions on purpose - and the
+   * card says which one it is showing.
+   */
+  static buildTrendRange(
+    preset: DateRangePreset,
+  ): { startDate?: string; endDate?: string; groupBy?: 'day' | 'week' | 'month' } {
+    switch (preset) {
+      case 'today':
+      case 'yesterday':
+      case 'last7days':
+        return {
+          startDate: formatLocalDate(daysAgo(6)),
+          endDate: formatLocalDate(localToday()),
+          groupBy: 'day',
+        };
+      case 'last30days':
+        return {
+          startDate: formatLocalDate(daysAgo(29)),
+          endDate: formatLocalDate(localToday()),
+          groupBy: 'day',
+        };
+      case 'thisMonth':
+        return {
+          startDate: formatLocalDate(
+            new Date(localToday().getFullYear(), localToday().getMonth(), 1),
+          ),
+          endDate: formatLocalDate(localToday()),
+          groupBy: 'day',
+        };
+      case 'previousMonth': {
+        const today = localToday();
+        return {
+          startDate: formatLocalDate(new Date(today.getFullYear(), today.getMonth() - 1, 1)),
+          endDate: formatLocalDate(new Date(today.getFullYear(), today.getMonth(), 0)),
+          groupBy: 'day',
+        };
+      }
+      case 'custom':
+      default:
+        // No explicit range: the backend answers for the current month.
         return { groupBy: 'day' };
     }
   }

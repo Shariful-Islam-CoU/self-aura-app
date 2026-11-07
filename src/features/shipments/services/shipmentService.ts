@@ -6,6 +6,7 @@ import type {
   ShipmentEvent,
   ShipmentListData,
   ShipmentListParams,
+  ShipmentSyncSummary,
   UpdateShipmentData,
   UpdateShipmentStatusData,
 } from '../types';
@@ -73,6 +74,40 @@ class ShipmentService {
       null,
     );
     return response.data.shipment;
+  }
+
+  /**
+   * Books (or retries booking) the parcel with the courier's provider.
+   *
+   * The provider invoice is the order number, so a retry after a timeout adopts
+   * an existing parcel instead of booking a second one. A provider failure is
+   * reported on the shipment (`bookingStatus: 'failed'` + `bookingError`), not
+   * as a rejected request - callers must check the status, not just the promise.
+   */
+  async book(id: string): Promise<Shipment> {
+    const response = await apiClient.post<ApiEnvelope<{ shipment: Shipment }>>(
+      `${this.basePath}/${id}/book`,
+      null,
+    );
+    return response.data.shipment;
+  }
+
+  /** Pulls the courier's current status for one shipment. */
+  async sync(id: string): Promise<Shipment> {
+    const response = await apiClient.post<ApiEnvelope<{ shipment: Shipment }>>(
+      `${this.basePath}/${id}/sync`,
+      null,
+    );
+    return response.data.shipment;
+  }
+
+  /** Sweeps booked, stale shipments; the backend bounds `limit` at 200. */
+  async syncActive(limit = 50): Promise<ShipmentSyncSummary> {
+    const response = await apiClient.post<ApiEnvelope<{ summary: ShipmentSyncSummary }>>(
+      `${this.basePath}/sync-active`,
+      { limit },
+    );
+    return response.data.summary;
   }
 
   async getHistory(id: string): Promise<ShipmentEvent[]> {

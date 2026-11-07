@@ -2,10 +2,15 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { getErrorMessage } from '@/api';
-import { Button, Input, Text } from '@/components/ui';
+import { Button, Input, Select, Text, type SelectOption } from '@/components/ui';
 import { SectionCard } from '@/features/customers/components/SectionCard';
 import { spacing } from '@/theme';
-import type { CreateCourierData, Courier, UpdateCourierData } from '../types';
+import type {
+  Courier,
+  CourierProvider,
+  CreateCourierData,
+  UpdateCourierData,
+} from '../types';
 
 export interface CourierFormProps {
   mode: 'create' | 'edit';
@@ -24,11 +29,21 @@ interface CourierFormErrors {
   notes?: string;
 }
 
+const PROVIDER_OPTIONS: SelectOption[] = [
+  { value: 'manual', label: 'Manual (type the tracking number yourself)' },
+  { value: 'steadfast', label: 'Steadfast (book parcels over the API)' },
+];
+
 /**
  * Create/edit courier form. Validation mirrors the backend schema
  * (`courierValidators`): name required and <= 100 chars; optional fields kept
  * within the backend limits. Empty optional values are sent as `undefined`,
  * matching the backend's empty-to-undefined transform.
+ *
+ * `provider` decides whether shipments on this courier can be booked over the
+ * provider API. Switching it does not move stored credentials: the backend
+ * clears them on a provider change, and a Steadfast courier without stored keys
+ * uses the server's default account when one is configured.
  */
 export function CourierForm({
   mode,
@@ -40,6 +55,9 @@ export function CourierForm({
   const isEdit = mode === 'edit' && Boolean(courier);
 
   const [name, setName] = useState(isEdit && courier ? courier.name : '');
+  const [provider, setProvider] = useState<CourierProvider>(
+    isEdit && courier ? (courier.provider ?? 'manual') : 'manual',
+  );
   const [contactPerson, setContactPerson] = useState(isEdit && courier ? (courier.contactPerson ?? '') : '');
   const [phone, setPhone] = useState(isEdit && courier ? (courier.phone ?? '') : '');
   const [website, setWebsite] = useState(isEdit && courier ? (courier.website ?? '') : '');
@@ -84,6 +102,7 @@ export function CourierForm({
 
     const payload: CreateCourierData = {
       name: name.trim(),
+      provider,
       contactPerson: contactPerson.trim() || undefined,
       phone: phone.trim() || undefined,
       website: website.trim() || undefined,
@@ -122,6 +141,18 @@ export function CourierForm({
           error={errors.name}
           placeholder="e.g. Sundarban Courier"
           editable={!isSubmitting}
+        />
+        <Select
+          label="Provider"
+          value={provider}
+          options={PROVIDER_OPTIONS}
+          onChange={(value) => setProvider(value as CourierProvider)}
+          disabled={isSubmitting}
+          helperText={
+            provider === 'steadfast'
+              ? 'Shipments on this courier can be booked through the Steadfast merchant API.'
+              : 'Staff type the tracking number on each shipment; nothing is sent to a provider.'
+          }
         />
         <Input
           label="Contact person"

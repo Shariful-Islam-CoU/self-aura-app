@@ -22,7 +22,10 @@ export const ordersKeys = {
   paymentSummary: (id: string) => ['orders', 'detail', id, 'payment-summary'] as const,
   // Form lookups live under the orders namespace too, but not under
   // 'list'/'detail', so list/detail invalidations never churn them.
-  customerLookup: (search: string) => ['orders', 'lookup', 'customers', search] as const,
+  // `customers-v2` marks the newest-first ordering: entries cached under the
+  // old alphabetical key must not be served after the change.
+  customerLookup: (search: string) =>
+    ['orders', 'lookup', 'customers-v2', search] as const,
   productLookup: (search: string) => ['orders', 'lookup', 'products', search] as const,
   deliveryRules: () => ['orders', 'delivery-rules'] as const,
 };
@@ -79,6 +82,11 @@ export function useOrderPaymentSummary(orderId: string | undefined) {
  * Customer lookup for the create-order form: server-side search over the
  * existing Customers API, active customers only (the backend rejects an
  * inactive customer at order creation). Debouncing belongs to the picker.
+ *
+ * Ordered newest-first: a shop adds a customer moments before creating their
+ * order, so the recently created ones are what staff actually need at the top.
+ * (The backend supports `createdAt` and `name`; alphabetical ordering buried new
+ * customers and made the picker feel like the record was missing.)
  */
 export function useOrderCustomerLookup(search: string, enabled = true) {
   const term = search.trim();
@@ -89,8 +97,8 @@ export function useOrderCustomerLookup(search: string, enabled = true) {
         search: term || undefined,
         isActive: true,
         limit: 20,
-        sortBy: 'name',
-        sortOrder: 'asc',
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
       }),
     enabled,
     staleTime: 30_000,

@@ -9,6 +9,7 @@ import { Dialog, Select } from '@/components/ui';
 import {
   ShipmentActionsSection,
   ShipmentAddressSection,
+  ShipmentBookingSection,
   ShipmentCourierSection,
   ShipmentDetailsSkeleton,
   ShipmentHistorySection,
@@ -21,9 +22,11 @@ import {
   SHIPMENT_STATUS_LABELS,
 } from '@/features/shipments/labels';
 import {
+  useBookShipment,
   useCancelShipment,
   useShipmentDetails,
   useShipmentHistory,
+  useSyncShipment,
   useUpdateShipmentStatus,
 } from '@/features/shipments/queries';
 import {
@@ -51,6 +54,7 @@ export default function ShipmentDetailsScreen() {
   const canView = hasPermission('shipments.view');
   const canEdit = hasPermission('shipments.edit');
   const canCancel = hasPermission('shipments.cancel');
+  const canCreate = hasPermission('shipments.create');
   const canViewOrder = hasPermission('orders.view');
 
   const shipmentQuery = useShipmentDetails(canView ? shipmentId : undefined);
@@ -59,6 +63,10 @@ export default function ShipmentDetailsScreen() {
   // buttons below, which are unreachable until a real shipment has loaded.
   const updateStatus = useUpdateShipmentStatus(shipmentId ?? '');
   const cancelShipment = useCancelShipment(shipmentId ?? '');
+  const bookShipment = useBookShipment(shipmentId ?? '');
+  const syncShipment = useSyncShipment(shipmentId ?? '');
+
+  const [bookDialogOpen, setBookDialogOpen] = useState(false);
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [pendingTarget, setPendingTarget] = useState<ShipmentStatus | null>(null);
@@ -67,7 +75,11 @@ export default function ShipmentDetailsScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const shipment = shipmentQuery.data;
-  const isBusy = updateStatus.isPending || cancelShipment.isPending;
+  const isBusy =
+    updateStatus.isPending ||
+    cancelShipment.isPending ||
+    bookShipment.isPending ||
+    syncShipment.isPending;
   const needsFailureReason = pendingTarget === 'delivery_failed';
 
   const handleRefresh = async () => {
@@ -115,6 +127,54 @@ export default function ShipmentDetailsScreen() {
       },
       onError: (error) => {
         setCancelDialogOpen(false);
+        toast.error(getErrorMessage(error));
+        void shipmentQuery.refetch();
+      },
+    });
+  };
+
+  /**
+   * Booking is a real parcel at the courier (no test mode), so it is confirmed.
+   * The request can succeed while the booking fails: the backend reports that on
+   * the shipment, so the toast and state come from `bookingStatus`, not from the
+   * promise resolving.
+   */
+  const handleBook = () => {
+    if (!shipment || isBusy) return;
+    bookShipment.mutate(undefined, {
+      onSuccess: (updated) => {
+        setBookDialogOpen(false);
+        if (updated.bookingStatus === 'booked') {
+          toast.success(
+            updated.trackingNumber
+              ? `Booked with courier · tracking ${updated.trackingNumber}.`
+              : 'Booked with courier.',
+          );
+        } else {
+          toast.error(updated.bookingError ?? 'The courier rejected the booking.');
+        }
+        void historyQuery.refetch();
+      },
+      onError: (error) => {
+        setBookDialogOpen(false);
+        toast.error(getErrorMessage(error));
+        void shipmentQuery.refetch();
+      },
+    });
+  };
+
+  const handleSync = () => {
+    if (!shipment || isBusy) return;
+    syncShipment.mutate(undefined, {
+      onSuccess: (updated) => {
+        toast.success(
+          updated.providerStatus
+            ? `Courier status: ${updated.providerStatus}.`
+            : 'Shipment synced with the courier.',
+        );
+        void historyQuery.refetch();
+      },
+      onError: (error) => {
         toast.error(getErrorMessage(error));
         void shipmentQuery.refetch();
       },
@@ -221,6 +281,17 @@ export default function ShipmentDetailsScreen() {
           shipment={shipment}
           onCallFailed={(message) => toast.error(message)}
         />
+        <ShipmentBookingSection
+          shipment={shipment}
+          canBook={canCreate}
+          canSync={canEdit}
+          isBusy={isBusy}
+          onBook={() => {
+            bookShipment.reset();
+            setBookDialogOpen(true);
+          }}
+          onSync={handleSync}
+        />
         <ShipmentAddressSection shipment={shipment} />
         {shipment.note ? <ShipmentNoteSection note={shipment.note} /> : null}
         <ShipmentHistorySection events={historyQuery.data} isLoading={historyQuery.isPending} />
@@ -289,6 +360,19 @@ export default function ShipmentDetailsScreen() {
           onPress: handleCancel,
         }}
         secondaryAction={{ label: 'Keep shipment' }}
+      />
+
+      <Dialog
+        visible={bookDialogOpen}
+        onClose={() => setBookDialogOpen(false)}
+        title="Book this parcel with the courier?"
+        message={`Shipment ${shipment.shipmentNumber} will be booked at the courier. This creates a real parcel and a real pickup - the courier has no test mode.`}
+        primaryAction={{
+          label: 'Book parcel',
+          loading: bookShipment.isPending,
+          onPress: handleBook,
+        }}
+        secondaryAction={{ label: 'Not now' }}
       />
     </Screen>
   );

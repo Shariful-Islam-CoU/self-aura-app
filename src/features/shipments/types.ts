@@ -80,7 +80,10 @@ export interface ShipmentCourierRef {
   id: string;
   name?: string;
   phone?: string;
+  provider?: "manual" | "steadfast";
 }
+
+export type CourierBookingStatus = "unbooked" | "pending" | "booked" | "failed";
 
 export interface ShipmentActorRef {
   id: string;
@@ -106,6 +109,16 @@ export interface Shipment {
   customer: ShipmentCustomerRef;
   courier: ShipmentCourierRef;
   trackingNumber?: string;
+  provider?: "manual" | "steadfast";
+  providerConsignmentId?: string;
+  providerStatus?: string;
+  providerStatusUpdatedAt?: string;
+  trackingUrl?: string;
+  bookingStatus?: CourierBookingStatus;
+  bookingError?: string;
+  bookedAt?: string;
+  codAmount?: number;
+  lastSyncedAt?: string;
   deliveryCharge: number;
   shippingAddress: ShippingAddressResponse;
   status: ShipmentStatus;
@@ -173,6 +186,11 @@ export interface CreateShipmentData {
   trackingNumber?: string;
   deliveryCharge?: number;
   note?: string;
+  /**
+   * Provider-backed couriers book a real parcel. The backend defaults this to
+   * `true`; the form sends `false` when staff switch booking off.
+   */
+  bookParcel?: boolean;
 }
 
 export interface UpdateShipmentData {
@@ -186,6 +204,13 @@ export interface UpdateShipmentStatusData {
   status: ShipmentStatus;
   failureReason?: DeliveryFailureReason;
   note?: string;
+}
+
+/** `POST /shipments/sync-active` result. */
+export interface ShipmentSyncSummary {
+  checked: number;
+  updated: number;
+  failed: number;
 }
 
 /** Sort keys the list toolbar offers (a subset of the backend's `sortBy`). */
