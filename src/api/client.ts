@@ -86,6 +86,13 @@ export class ApiClient {
     const onExternalAbort = () => controller.abort();
     options.signal?.addEventListener('abort', onExternalAbort);
 
+    // A `null`/`undefined` body means "no body", not the JSON literal `null`.
+    // `JSON.stringify(null)` is the four characters `null`, which Express's
+    // strict JSON parser rejects with "Invalid JSON payload" - that broke every
+    // no-body action (shipment cancel/book/sync, purchase actions) until this
+    // gate. Only a real payload is serialized.
+    const hasJsonBody = body !== undefined && body !== null && !isMultipart;
+
     let response: Response;
     try {
       response = await fetch(url, {
@@ -94,12 +101,11 @@ export class ApiClient {
         // generates the boundary itself, and pinning `multipart/form-data`
         // without it would break the request (the backend's multer parser
         // needs the exact boundary the runtime produced).
-        headers: this.buildHeaders(options.headers, body !== undefined && !isMultipart),
-        body:
-          body !== undefined
-            ? isMultipart
-              ? (body as BodyInit)
-              : JSON.stringify(body)
+        headers: this.buildHeaders(options.headers, hasJsonBody),
+        body: isMultipart
+          ? (body as BodyInit)
+          : hasJsonBody
+            ? JSON.stringify(body)
             : undefined,
         signal: controller.signal,
       });
