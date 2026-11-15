@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getErrorMessage } from '@/api';
 import {
@@ -67,6 +68,7 @@ export function ShipmentForm({
 }: ShipmentFormProps) {
   const { hasPermission } = usePermissions();
   const canViewOrders = hasPermission('orders.view');
+  const insets = useSafeAreaInsets();
 
   const [courierId, setCourierId] = useState(
     mode === 'edit' && shipment ? shipment.courier.id : '',
@@ -292,7 +294,7 @@ export function ShipmentForm({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       {submitError ? (
         <Text variant="bodySmall" tone="danger" accessibilityRole="alert">
           {submitError}

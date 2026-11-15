@@ -114,6 +114,9 @@ export interface Shipment {
   providerStatus?: string;
   providerStatusUpdatedAt?: string;
   trackingUrl?: string;
+  /** The pickup request collecting this parcel, once it is added to one. */
+  pickup?: string;
+  pickupRequestedAt?: string;
   bookingStatus?: CourierBookingStatus;
   bookingError?: string;
   bookedAt?: string;

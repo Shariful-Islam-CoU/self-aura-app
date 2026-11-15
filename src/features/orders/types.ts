@@ -314,6 +314,8 @@ export interface DraftOrderItem {
   unitPrice: number;
   stock: number;
   quantity: string;
+  /** Display-only primary image URL (raw stored `ProductImage.url`); never sent to the API. */
+  imageUrl?: string | null;
 }
 
 /** Ready-made filter/sort state shared between the list UI and query key. */

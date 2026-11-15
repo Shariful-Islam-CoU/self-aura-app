@@ -28,16 +28,20 @@ export function ShipmentBookingSection({
   shipment,
   canBook,
   canSync,
+  canRequestPickup,
   isBusy,
   onBook,
   onSync,
+  onRequestPickup,
 }: {
   shipment: Shipment;
   canBook: boolean;
   canSync: boolean;
+  canRequestPickup?: boolean;
   isBusy: boolean;
   onBook: () => void;
   onSync: () => void;
+  onRequestPickup?: () => void;
 }) {
   if (shipment.provider !== 'steadfast') return null;
 
@@ -68,6 +72,17 @@ export function ShipmentBookingSection({
       ) : null}
       {shipment.lastSyncedAt ? (
         <DetailRow label="Last synced" value={formatDateTime(shipment.lastSyncedAt)} />
+      ) : null}
+      {/* Pickup: how the rider is asked to collect an already-booked parcel. */}
+      {shipment.pickup ? (
+        <DetailRow
+          label="Pickup"
+          value={
+            shipment.pickupRequestedAt
+              ? `Requested ${formatDateTime(shipment.pickupRequestedAt)}`
+              : 'Included in a pickup request'
+          }
+        />
       ) : null}
       {shipment.bookingError ? (
         <DetailRow label="Booking error" value={shipment.bookingError} />
@@ -104,6 +119,18 @@ export function ShipmentBookingSection({
             loading={isBusy}
             disabled={isBusy}
             onPress={onSync}
+          />
+        ) : null}
+        {/* A rider is requested separately from booking; only a booked parcel
+            that is not already in a pickup can be added to one. */}
+        {isBooked && canRequestPickup && !shipment.pickup && onRequestPickup ? (
+          <Button
+            title="Request pickup"
+            icon="bicycle-outline"
+            variant="outline"
+            fullWidth
+            disabled={isBusy}
+            onPress={onRequestPickup}
           />
         ) : null}
       </View>

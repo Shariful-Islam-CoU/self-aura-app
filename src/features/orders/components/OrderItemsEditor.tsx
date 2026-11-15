@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { getErrorMessage } from '@/api';
@@ -8,6 +8,7 @@ import { BottomSheet, Button, Card, IconButton, Input, SearchInput, Text } from 
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useTheme } from '@/providers';
 import { radius, spacing } from '@/theme';
+import { getPrimaryImage, mediaImageSource } from '@/features/products/lib/media';
 import type { Product } from '@/features/products/types';
 import { formatCurrency } from '@/utils/format';
 
@@ -79,6 +80,7 @@ export function OrderItemsEditor({
       return;
     }
     setLimitError(null);
+    const primaryImage = getPrimaryImage(product.images);
     onItemsChange([
       ...items,
       {
@@ -89,6 +91,7 @@ export function OrderItemsEditor({
         unitPrice: product.sellingPrice,
         stock: product.stock,
         quantity: '1',
+        imageUrl: primaryImage?.url ?? null,
       },
     ]);
     setSearch('');
@@ -130,9 +133,27 @@ export function OrderItemsEditor({
         const quantity = Number(item.quantity);
         const lineTotal =
           Number.isFinite(quantity) && quantity > 0 ? item.unitPrice * quantity : null;
+        const itemThumbUri = mediaImageSource(item.imageUrl, 160);
         return (
           <Card key={item.key} style={styles.itemCard}>
             <View style={styles.itemRow}>
+              {itemThumbUri ? (
+                <Image
+                  source={{ uri: itemThumbUri }}
+                  style={[styles.itemThumb, { backgroundColor: theme.colors.surfaceMuted }]}
+                  accessible={false}
+                />
+              ) : (
+                <View
+                  style={[
+                    styles.itemThumb,
+                    styles.imageFallback,
+                    { backgroundColor: theme.colors.surfaceMuted },
+                  ]}
+                >
+                  <Ionicons name="cube-outline" size={20} color={theme.colors.iconMuted} />
+                </View>
+              )}
               <View style={styles.itemInfo}>
                 <Text variant="bodyMedium" numberOfLines={2}>
                   {item.productName}
@@ -235,7 +256,7 @@ export function OrderItemsEditor({
         </Text>
       </View>
 
-      <BottomSheet visible={pickerOpen} onClose={closePicker} title="Add product">
+      <BottomSheet visible={pickerOpen} onClose={closePicker} title="Add product" expand>
         <View style={styles.searchWrap}>
           <SearchInput
             value={search}
@@ -272,6 +293,8 @@ export function OrderItemsEditor({
             style={styles.list}
             renderItem={({ item }) => {
               const added = selectedIds.has(item.id);
+              const primaryImage = getPrimaryImage(item.images);
+              const thumbUri = primaryImage ? mediaImageSource(primaryImage.url, 192) : null;
               return (
                 <Pressable
                   onPress={() => handleAdd(item)}
@@ -295,6 +318,23 @@ export function OrderItemsEditor({
                       {item.sku} · {formatCurrency(item.sellingPrice)} · Stock: {item.stock}
                     </Text>
                   </View>
+                  {thumbUri ? (
+                    <Image
+                      source={{ uri: thumbUri }}
+                      style={[styles.optionImage, { backgroundColor: theme.colors.surfaceMuted }]}
+                      accessible={false}
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        styles.optionImage,
+                        styles.imageFallback,
+                        { backgroundColor: theme.colors.surfaceMuted },
+                      ]}
+                    >
+                      <Ionicons name="cube-outline" size={22} color={theme.colors.iconMuted} />
+                    </View>
+                  )}
                   {added ? (
                     <View style={styles.addedTag}>
                       <Ionicons
@@ -328,6 +368,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   itemInfo: { flex: 1, gap: 2 },
+  itemThumb: { width: 44, height: 44, borderRadius: radius.md },
   qtyWrap: { width: 84 },
   removeButton: { marginTop: 20 },
   summary: {
@@ -348,7 +389,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   searchWrap: { paddingBottom: spacing.sm },
-  list: { maxHeight: 380 },
+  list: { flex: 1 },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -358,6 +399,8 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   optionBody: { flex: 1, gap: 2 },
+  optionImage: { width: 48, height: 48, borderRadius: radius.md },
+  imageFallback: { alignItems: 'center', justifyContent: 'center' },
   addedTag: {
     flexDirection: 'row',
     alignItems: 'center',

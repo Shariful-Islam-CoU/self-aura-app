@@ -1,7 +1,15 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 
 import { customerService } from '@/features/customers/services/customerService';
 import { dashboardKeys } from '@/features/dashboard/queries';
+import { getPrimaryImage } from '@/features/products/lib/media';
+import { productsKeys } from '@/features/products/queries';
 import { productService } from '@/features/products/services/productService';
 import { deliveryRuleService } from './services/deliveryRuleService';
 import { orderService } from './services/orderService';
@@ -143,6 +151,35 @@ export function useDeliveryRules() {
     queryFn: () => deliveryRuleService.fetchActiveDeliveryRules(),
     staleTime: 60_000,
   });
+}
+
+/**
+ * Primary image URL for the order's line items, keyed by product id.
+ *
+ * An order item stores the product id only (no media snapshot), so the image
+ * is resolved through the product detail endpoint. The query key is the
+ * Products module's own detail key, so a product whose detail is already
+ * cached costs no request and media edits keep this screen in sync. Fetches
+ * run in parallel and a product that cannot be loaded (deleted, or a role
+ * without `products.view`) simply contributes no entry - the UI keeps its
+ * placeholder.
+ */
+export function useOrderItemImageUrls(productIds: readonly string[]) {
+  const queries = useQueries({
+    queries: productIds.map((id) => ({
+      queryKey: productsKeys.detail(id),
+      queryFn: () => productService.getById(id),
+      staleTime: 15_000,
+    })),
+  });
+
+  const imageUrls: Record<string, string> = {};
+  productIds.forEach((id, index) => {
+    const product = queries[index]?.data;
+    const primary = product ? getPrimaryImage(product.images) : null;
+    if (primary) imageUrls[id] = primary.url;
+  });
+  return imageUrls;
 }
 
 /**

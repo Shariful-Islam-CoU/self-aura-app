@@ -285,12 +285,16 @@ export default function ShipmentDetailsScreen() {
           shipment={shipment}
           canBook={canCreate}
           canSync={canEdit}
+          canRequestPickup={canEdit}
           isBusy={isBusy}
           onBook={() => {
             bookShipment.reset();
             setBookDialogOpen(true);
           }}
           onSync={handleSync}
+          onRequestPickup={() =>
+            router.push(`/couriers/${shipment.courier.id}/pickups`)
+          }
         />
         <ShipmentAddressSection shipment={shipment} />
         {shipment.note ? <ShipmentNoteSection note={shipment.note} /> : null}

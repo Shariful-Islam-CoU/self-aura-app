@@ -1,45 +1,71 @@
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Badge, Skeleton, Text } from '@/components/ui';
 import { useTheme } from '@/providers';
-import { spacing } from '@/theme';
+import { radius, spacing } from '@/theme';
 import { formatCurrency, formatNumber } from '@/utils/format';
+import { mediaImageSource } from '@/features/products/lib/media';
 import { PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_TONES } from '../labels';
+import { useOrderItemImageUrls } from '../queries';
 import type { Order, OrderPaymentSummary } from '../types';
 import { DetailRow, SectionCard } from './SectionCard';
 
 /**
  * Order items from the order's own snapshot - historical unit prices come
  * from the stored item data and are NEVER re-fetched from today's products.
+ * Only the thumbnail is resolved from the current product record (the order
+ * stores a product id, not a media snapshot).
  */
 export function OrderItemsSection({ order }: { order: Order }) {
   const { theme } = useTheme();
+  const imageUrls = useOrderItemImageUrls(order.items.map((item) => item.product.id));
 
   return (
     <SectionCard title="Items">
-      {order.items.map((item, index) => (
-        <View
-          key={item.id}
-          style={[
-            styles.item,
-            index > 0 && {
-              borderTopWidth: StyleSheet.hairlineWidth,
-              borderTopColor: theme.colors.border,
-            },
-          ]}
-          accessibilityLabel={`${item.productName}, quantity ${item.quantity}, subtotal ${formatCurrency(item.subtotal)}`}
-        >
-          <View style={styles.itemInfo}>
-            <Text variant="bodyMedium" numberOfLines={2}>
-              {item.productName}
-            </Text>
-            <Text variant="caption" tone="muted">
-              {item.sku} · {formatCurrency(item.unitPrice)} × {formatNumber(item.quantity)}
-            </Text>
+      {order.items.map((item, index) => {
+        const imageUri = mediaImageSource(imageUrls[item.product.id], 160);
+        return (
+          <View
+            key={item.id}
+            style={[
+              styles.item,
+              index > 0 && {
+                borderTopWidth: StyleSheet.hairlineWidth,
+                borderTopColor: theme.colors.border,
+              },
+            ]}
+            accessibilityLabel={`${item.productName}, quantity ${item.quantity}, subtotal ${formatCurrency(item.subtotal)}`}
+          >
+            {imageUri ? (
+              <Image
+                source={{ uri: imageUri }}
+                style={[styles.itemThumb, { backgroundColor: theme.colors.surfaceMuted }]}
+                accessible={false}
+              />
+            ) : (
+              <View
+                style={[
+                  styles.itemThumb,
+                  styles.imageFallback,
+                  { backgroundColor: theme.colors.surfaceMuted },
+                ]}
+              >
+                <Ionicons name="cube-outline" size={20} color={theme.colors.iconMuted} />
+              </View>
+            )}
+            <View style={styles.itemInfo}>
+              <Text variant="bodyMedium" numberOfLines={2}>
+                {item.productName}
+              </Text>
+              <Text variant="caption" tone="muted">
+                {item.sku} · {formatCurrency(item.unitPrice)} × {formatNumber(item.quantity)}
+              </Text>
+            </View>
+            <Text variant="bodyMedium">{formatCurrency(item.subtotal)}</Text>
           </View>
-          <Text variant="bodyMedium">{formatCurrency(item.subtotal)}</Text>
-        </View>
-      ))}
+        );
+      })}
     </SectionCard>
   );
 }
@@ -127,4 +153,6 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   itemInfo: { flex: 1, gap: 2 },
+  itemThumb: { width: 44, height: 44, borderRadius: radius.md },
+  imageFallback: { alignItems: 'center', justifyContent: 'center' },
 });

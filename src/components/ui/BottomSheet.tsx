@@ -13,6 +13,13 @@ export interface BottomSheetProps {
   title?: string;
   /** Hide the header close button (default: shown). */
   showClose?: boolean;
+  /**
+   * Stretch the sheet from just below the status bar to the bottom of the
+   * screen instead of hugging its content. Use when the sheet owns a fixed
+   * header (e.g. a search field) above a list that should take the rest of
+   * the space and scroll on its own.
+   */
+  expand?: boolean;
   children: ReactNode;
 }
 
@@ -28,6 +35,7 @@ export function BottomSheet({
   onClose,
   title,
   showClose = true,
+  expand = false,
   children,
 }: BottomSheetProps) {
   const { theme } = useTheme();
@@ -45,11 +53,13 @@ export function BottomSheet({
         <View
           style={[
             styles.sheet,
+            expand && styles.expanded,
             {
               backgroundColor: theme.colors.surface,
               borderTopColor: theme.colors.border,
               paddingBottom: insets.bottom + spacing.lg,
             },
+            expand && { marginTop: insets.top + spacing.sm },
             theme.shadows.md,
           ]}
         >
@@ -96,6 +106,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     maxHeight: '85%',
+  },
+  expanded: {
+    flex: 1,
+    maxHeight: '100%',
   },
   handle: {
     alignSelf: 'center',

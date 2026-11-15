@@ -12,6 +12,16 @@ export interface Courier {
   /** Effective credentials: true when stored keys decrypt or env keys exist. */
   hasCredentials?: boolean;
   credentialsSource?: 'courier' | 'environment';
+  /**
+   * Where riders collect from, as the courier's panel knows it. Required
+   * before a pickup request can be made.
+   */
+  pickup?: {
+    addressId: string;
+    policeStationId: string;
+    address: string;
+    contactNumber: string;
+  };
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -46,6 +56,13 @@ export interface CreateCourierData {
   contactPerson?: string;
   address?: string;
   notes?: string;
+  /** Pickup address ids come from the courier's own panel. */
+  pickup?: {
+    addressId: string;
+    policeStationId: string;
+    address: string;
+    contactNumber: string;
+  };
 }
 
 export type UpdateCourierData = Partial<CreateCourierData>;
